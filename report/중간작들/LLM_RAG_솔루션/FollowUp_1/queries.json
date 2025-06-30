@@ -1,0 +1,24 @@
+{
+  "depth": 1,
+  "maxDepth": 2,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-20T06:26:56.297Z",
+  "parentDimension": "Regulatory & Risk Snapshot",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Global data privacy regulations for LLM RAG",
+      "dimension": null,
+      "researchGoal": "Explore major global and local data and AI regulations impacting LLM RAG compliance.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Sector-specific compliance challenges in RAG",
+      "dimension": null,
+      "researchGoal": "Investigate compliance, security, and certification requirements in finance and healthcare for RAG systems.",
+      "expectedResultFile": null
+    }
+  ]
+}

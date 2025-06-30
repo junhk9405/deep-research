@@ -1,0 +1,205 @@
+{
+  "projectInfo": {
+    "projectName": "그래프DB와_온톨로지",
+    "startTime": "2025-06-26T06:30:18.280Z",
+    "totalDepth": 2
+  },
+  "searchHistory": {
+    "1차검색": {
+      "depth": 2,
+      "folderName": "Middle",
+      "timestamp": "2025-06-26T06:30:18.280Z",
+      "parentDimension": null,
+      "totalQueries": 5,
+      "queries": [
+        {
+          "index": 1,
+          "query": "Graph DB and ontology solution features",
+          "dimension": "Solution Overview",
+          "researchGoal": "To understand the scope, key functionalities, and value propositions of graph databases and ontologies as solutions.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 2,
+          "query": "Graph DB and ontology market trends",
+          "dimension": "Market Landscape & Growth Dynamics",
+          "researchGoal": "To explore the market size, growth rates, and adoption trends of graph databases and ontologies globally and regionally.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 3,
+          "query": "Graph DB and ontology user segments",
+          "dimension": "Customer Segmentation & Demand Analysis",
+          "researchGoal": "To identify key customer groups, their pain points, and demand drivers for graph databases and ontologies.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 4,
+          "query": "Graph DB and ontology technology comparison",
+          "dimension": "Technology Assessment & Business Value",
+          "researchGoal": "To assess core technologies, integration challenges, use cases, and business value of graph databases versus ontologies.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 5,
+          "query": "Graph DB and ontology compliance risks",
+          "dimension": "Risk & Regulatory Snapshot",
+          "researchGoal": "To analyze regulatory, privacy, and security risks related to graph databases and ontologies and mitigation strategies.",
+          "expectedResultFile": null
+        }
+      ]
+    },
+    "2차검색": {
+      "CustomerSegmentationDemandAnalysis": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-26T06:33:00.659Z",
+        "parentDimension": "Customer Segmentation & Demand Analysis",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "GraphDB solution definition and scope",
+            "dimension": null,
+            "researchGoal": "Understand what GraphDB and ontologies do in customer segmentation",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "GraphDB customer segmentation by industry and size",
+            "dimension": null,
+            "researchGoal": "Identify user segments of GraphDB and ontologies in enterprises",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "GraphDB demand drivers and adoption triggers",
+            "dimension": null,
+            "researchGoal": "Explore quantified demand and pain points for GraphDB users",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "MarketLandscapeGrowthDynamics": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-26T06:33:05.722Z",
+        "parentDimension": "Market Landscape & Growth Dynamics",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Graph database solution scope and features",
+            "dimension": null,
+            "researchGoal": "Explore the definition and scope of graph database solutions in the market landscape and growth dynamics.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Graph database market TAM and CAGR global Korea",
+            "dimension": null,
+            "researchGoal": "Investigate total addressable market and compound annual growth rates for graph databases globally and in Korea.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Graph database investment and M&A trends",
+            "dimension": null,
+            "researchGoal": "Analyze investment, funding, and merger and acquisition trends in the graph database market value chain.",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "SolutionOverview": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-26T06:33:08.530Z",
+        "parentDimension": "Solution Overview",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Ontology-based graph database solution scope",
+            "dimension": null,
+            "researchGoal": "Explore the definition and scope of ontology-based graph database solutions within the solution overview dimension.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Korean competitive landscape graph databases",
+            "dimension": null,
+            "researchGoal": "Investigate Korean-language findings and competitive snapshot of graph databases supporting ontologies.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Value proposition ontology graph databases",
+            "dimension": null,
+            "researchGoal": "Identify evidence of unmet needs and high-level value propositions of ontology-based graph databases.",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "RiskRegulatorySnapshot": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-26T06:43:35.837Z",
+        "parentDimension": "Risk & Regulatory Snapshot",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Graph database ontology security vulnerabilities",
+            "dimension": null,
+            "researchGoal": "Identify common security vulnerabilities in graph databases related to ontology compliance.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Graph database ontology security policy support",
+            "dimension": null,
+            "researchGoal": "Compare graph database systems in supporting ontology-based security policies.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Ontology governance best practices graph databases",
+            "dimension": null,
+            "researchGoal": "Explore best practices for ontology governance to reduce compliance risks in enterprise graph databases.",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "TechnologyAssessmentBusinessValue": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-26T06:43:37.752Z",
+        "parentDimension": "Technology Assessment & Business Value",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Graph database solution scope and features",
+            "dimension": null,
+            "researchGoal": "Explore the definition and capabilities of graph database solutions in technology assessment and business value.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Business value drivers for graph databases",
+            "dimension": null,
+            "researchGoal": "Identify key business value drivers and inhibitors influencing graph database adoption and growth.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "ROI of graph databases versus ontologies",
+            "dimension": null,
+            "researchGoal": "Assess the business value and return on investment of graph databases compared to ontologies.",
+            "expectedResultFile": null
+          }
+        ]
+      }
+    }
+  }
+}

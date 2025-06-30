@@ -1,0 +1,24 @@
+{
+  "depth": 2,
+  "maxDepth": 3,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-24T04:11:22.959Z",
+  "parentDimension": "Customer Segmentation & Demand Analysis",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Construction safety AI segment personas pain points",
+      "dimension": null,
+      "researchGoal": "Identify specific pain points and unmet needs of customer segments in construction safety AI",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Regional regulations impact AI adoption construction",
+      "dimension": null,
+      "researchGoal": "Understand how regional regulatory environments influence AI adoption and customer demand in construction safety",
+      "expectedResultFile": null
+    }
+  ]
+}

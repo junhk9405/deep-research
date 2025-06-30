@@ -31,10 +31,9 @@ const customModel = process.env.CUSTOM_MODEL
 
 // Models
 
-const o3MiniModel = openai?.('o3-mini', {
-  reasoningEffort: 'medium',
+const o3MiniModel = openai?.('o3-2025-04-16', {
   structuredOutputs: true,
-});
+})
 
 const deepSeekR1Model = fireworks
   ? wrapLanguageModel({
@@ -56,6 +55,44 @@ export function getModel(): LanguageModelV1 {
   }
 
   return model as LanguageModelV1;
+}
+
+// 함수별 모델 선택 함수들
+export function getModelSafely(preferredModel: string): LanguageModelV1 {
+  try {
+    if (!openai) {
+      console.warn('OpenAI provider not available, falling back to default');
+      return getModel();
+    }
+    return openai(preferredModel, { structuredOutputs: true });
+  } catch (error) {
+    console.warn(`Failed to load ${preferredModel}, falling back to default:`, error);
+    return getModel();
+  }
+}
+
+export function getQueryModel(): LanguageModelV1 {
+  const queryModelName = process.env.QUERY_MODEL || 'gpt-4.1-mini-2025-04-14';
+  return getModelSafely(queryModelName);
+}
+
+export function getResearchModel(): LanguageModelV1 {
+  const researchModelName = process.env.RESEARCH_MODEL || 'gpt-4.1-mini-2025-04-14';
+  return getModelSafely(researchModelName);
+}
+
+export function getReportModel(): LanguageModelV1 {
+  // 최종 보고서용은 항상 o3 모델 사용
+  const reportModelName = process.env.REPORT_MODEL || 'o3-2025-04-16';
+  if (reportModelName === 'o3-2025-04-16' && o3MiniModel) {
+    return o3MiniModel;
+  }
+  return getModelSafely(reportModelName);
+}
+
+export function getAnswerModel(): LanguageModelV1 {
+  const answerModelName = process.env.ANSWER_MODEL || 'gpt-4.1-mini-2025-04-14';
+  return getModelSafely(answerModelName);
 }
 
 const MinChunkSize = 140;

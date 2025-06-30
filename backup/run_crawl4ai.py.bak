@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import asyncio
+import argparse
+import json
+import sys
+import time
+
+try:
+    from crawl4ai import AsyncWebCrawler
+except ImportError:
+    print("crawl4ai 패키지가 설치되어 있지 않습니다. 'pip install crawl4ai' 명령으로 설치해주세요.")
+    sys.exit(1)
+
+async def main():
+    # 명령줄 인자 파싱
+    parser = argparse.ArgumentParser(description='crawl4ai를 사용한 웹 크롤링')
+    parser.add_argument('--query', required=True, help='검색 쿼리 또는 URL')
+    parser.add_argument('--timeout', type=int, default=60000, help='타임아웃(ms)')
+    parser.add_argument('--limit', type=int, default=10, help='결과 제한 수')
+    parser.add_argument('--max-tokens', type=int, default=100000, help='최대 토큰 수')
+    parser.add_argument('--output', required=True, help='결과 출력 파일 경로')
+    
+    args = parser.parse_args()
+    
+    try:
+        print(f"[crawl4ai] 검색 시작: {args.query}")
+        start_time = time.time()
+        
+        # crawl4ai 실행
+        async with AsyncWebCrawler() as crawler:
+            # URL인 경우 직접 크롤링, 아닌 경우 검색어로 간주
+            is_url = args.query.startswith('http://') or args.query.startswith('https://')
+            
+            if is_url:
+                # URL 직접 크롤링
+                result = await crawler.arun(
+                    url=args.query,
+                    timeout_ms=args.timeout,
+                )
+                results = [result]
+            else:
+                # 검색어로 여러 URL 검색 (실제로는 검색 기능이 제한적일 수 있음)
+                # 여기서는 간단한 예시로 구현
+                # 실제 구현에서는 적절한 검색 API 사용 필요
+                print(f"[crawl4ai] 경고: 검색어 기반 검색은 제한적일 수 있습니다.")
+                # 임시 결과
+                results = []
+            
+        # 결과 형식 변환
+        output_results = []
+        for result in results:
+            if hasattr(result, 'markdown') and result.markdown:
+                output_results.append({
+                    'url': args.query if is_url else '',
+                    'markdown': result.markdown,
+                })
+        
+        # 결과 파일 저장
+        with open(args.output, 'w', encoding='utf-8') as f:
+            json.dump(output_results, f, ensure_ascii=False, indent=2)
+        
+        end_time = time.time()
+        print(f"[crawl4ai] 검색 완료: {len(output_results)}개 결과, 소요 시간: {end_time - start_time:.2f}초")
+        
+    except Exception as e:
+        print(f"[crawl4ai] 오류 발생: {str(e)}", file=sys.stderr)
+        # 오류 시 빈 결과 저장
+        with open(args.output, 'w', encoding='utf-8') as f:
+            json.dump([], f)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    asyncio.run(main())

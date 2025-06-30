@@ -1,0 +1,24 @@
+{
+  "depth": 1,
+  "maxDepth": 2,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-23T04:36:14.212Z",
+  "parentDimension": "Business Impact & ROI Potential",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Vision AI ROI metrics used car inspection",
+      "dimension": null,
+      "researchGoal": "Identify specific ROI metrics and financial KPIs from case studies on Vision AI in used car exterior inspection.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Vision AI phased deployment strategies used cars",
+      "dimension": null,
+      "researchGoal": "Explore how leading companies implement phased Vision AI deployment in used car sales to maximize business impact.",
+      "expectedResultFile": null
+    }
+  ]
+}

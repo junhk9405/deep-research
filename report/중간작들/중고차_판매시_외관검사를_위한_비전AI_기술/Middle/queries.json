@@ -1,0 +1,45 @@
+{
+  "depth": 2,
+  "maxDepth": 2,
+  "folderName": "Middle",
+  "timestamp": "2025-06-23T04:32:51.454Z",
+  "parentDimension": null,
+  "totalQueries": 5,
+  "queries": [
+    {
+      "index": 1,
+      "query": "중고차 판매시 외관검사를 위한 비전AI 기술 market size growth",
+      "dimension": "Market Analysis & Demand Drivers",
+      "researchGoal": "To understand the market size, growth rate, and demand trends for vision AI technology in used car exterior inspection, identifying opportunities and adoption barriers.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "중고차 판매시 외관검사를 위한 비전AI 기술 competitors features pricing",
+      "dimension": "Competitive Landscape & Strategic Differentiators",
+      "researchGoal": "To identify key competitors, their product features, pricing models, and strategic differentiators in vision AI for used car exterior inspection.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "중고차 판매시 외관검사를 위한 비전AI 기술 emerging technologies feasibility",
+      "dimension": "Technology Trends & Feasibility Assessment",
+      "researchGoal": "To evaluate the maturity, emerging technologies, and feasibility challenges of vision AI solutions for used car exterior inspection.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "중고차 판매시 외관검사를 위한 비전AI 기술 regulations risks compliance",
+      "dimension": "Regulatory & Risk Snapshot",
+      "researchGoal": "To analyze relevant regulations, compliance requirements, and risks associated with deploying vision AI for used car exterior inspection.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "중고차 판매시 외관검사를 위한 비전AI 기술 business impact ROI",
+      "dimension": "Business Impact & ROI Potential",
+      "researchGoal": "To assess the business value, ROI potential, cost-benefit scenarios, and financial KPIs for vision AI in used car exterior inspection.",
+      "expectedResultFile": null
+    }
+  ]
+}

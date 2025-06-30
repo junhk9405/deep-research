@@ -1,0 +1,45 @@
+{
+  "depth": 2,
+  "maxDepth": 2,
+  "folderName": "Middle",
+  "timestamp": "2025-06-24T05:00:36.699Z",
+  "parentDimension": null,
+  "totalQueries": 5,
+  "queries": [
+    {
+      "index": 1,
+      "query": "cloud based ERP solution features and benefits",
+      "dimension": "Solution Overview",
+      "researchGoal": "To understand the core functionalities, scope, and value proposition of cloud-based ERP solutions including unmet needs and pain points in the Korean market.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "cloud ERP market size growth trends Korea",
+      "dimension": "Market Landscape & Growth Dynamics",
+      "researchGoal": "To analyze the market size, growth rate, and adoption trends of cloud ERP solutions in Korea and globally, identifying key drivers and inhibitors.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "cloud ERP customer segments pain points Korea",
+      "dimension": "Customer Segmentation & Demand Analysis",
+      "researchGoal": "To identify key customer segments by industry and size, their specific pain points, adoption triggers, and willingness to pay for cloud ERP solutions in Korea.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "cloud ERP technology options integration challenges",
+      "dimension": "Technology Assessment & Business Value",
+      "researchGoal": "To evaluate the maturity and feasibility of cloud ERP technologies, integration complexity, scalability, and expected business value or ROI.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "cloud ERP data privacy compliance risks Korea",
+      "dimension": "Risk & Regulatory Snapshot",
+      "researchGoal": "To assess regulatory requirements, data privacy laws, cybersecurity risks, and compliance challenges relevant to cloud ERP adoption in Korea.",
+      "expectedResultFile": null
+    }
+  ]
+}

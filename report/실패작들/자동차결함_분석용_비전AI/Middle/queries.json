@@ -1,0 +1,45 @@
+{
+  "depth": 2,
+  "maxDepth": 2,
+  "folderName": "Middle",
+  "timestamp": "2025-06-23T04:16:06.235Z",
+  "parentDimension": null,
+  "totalQueries": 5,
+  "queries": [
+    {
+      "index": 1,
+      "query": "vision AI for automotive defect analysis market size",
+      "dimension": "Market Analysis & Demand Drivers",
+      "researchGoal": "To understand the market size, growth rate, and demand trends for vision AI solutions in automotive defect analysis, identifying key customer pain points and adoption barriers.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "leading vision AI solutions automotive defect detection",
+      "dimension": "Competitive Landscape & Strategic Differentiators",
+      "researchGoal": "To identify key competitors, their product features, pricing models, and unique differentiators in the automotive defect analysis vision AI market.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "emerging vision AI technologies automotive defect detection",
+      "dimension": "Technology Trends & Feasibility Assessment",
+      "researchGoal": "To evaluate the latest technological advancements, performance benchmarks, and integration challenges of vision AI applied to automotive defect analysis.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "regulations and risks vision AI automotive defects",
+      "dimension": "Regulatory & Risk Snapshot",
+      "researchGoal": "To analyze relevant data privacy, cybersecurity, and AI governance regulations impacting vision AI solutions for automotive defect detection, along with associated risks and mitigation strategies.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "ROI of vision AI automotive defect analysis solutions",
+      "dimension": "Business Impact & ROI Potential",
+      "researchGoal": "To assess the financial benefits, cost savings, payback periods, and overall business impact of deploying vision AI for automotive defect detection.",
+      "expectedResultFile": null
+    }
+  ]
+}

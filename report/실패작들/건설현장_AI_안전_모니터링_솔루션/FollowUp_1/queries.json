@@ -1,0 +1,24 @@
+{
+  "depth": 1,
+  "maxDepth": 2,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-20T04:43:54.918Z",
+  "parentDimension": "Market Analysis & Demand Drivers",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "AI safety monitoring market growth drivers",
+      "dimension": null,
+      "researchGoal": "Identify key factors driving market expansion and demand for AI safety monitoring in construction.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "AI adoption barriers in construction safety",
+      "dimension": null,
+      "researchGoal": "Explore challenges and obstacles affecting AI safety monitoring uptake in construction sites.",
+      "expectedResultFile": null
+    }
+  ]
+}

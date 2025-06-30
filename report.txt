@@ -1,0 +1,6 @@
+#
+$env:NODE_TLS_REJECT_UNAUTHORIZED=0;
+
+
+# strategic-report-generator.ts
+cd c:/Users/user/AI_PJT/deep-research; npx tsx --env-file=.env.local src/strategic-report-generator.ts "report/건설현장_안전관제용_시각AI기술"

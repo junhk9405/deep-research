@@ -1,0 +1,24 @@
+{
+  "depth": 1,
+  "maxDepth": 2,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-23T04:20:02.964Z",
+  "parentDimension": "Business Impact & ROI Potential",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Vision AI automotive defect detection market size",
+      "dimension": null,
+      "researchGoal": "Analyze market size, growth, and demand drivers for vision AI in automotive defect detection to assess business impact and ROI potential.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Vision AI automotive defect detection ROI metrics",
+      "dimension": null,
+      "researchGoal": "Investigate key ROI metrics and cost-saving evidence from vision AI automotive defect detection implementations to evaluate business impact and financial benefits.",
+      "expectedResultFile": null
+    }
+  ]
+}

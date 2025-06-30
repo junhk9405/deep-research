@@ -1,0 +1,24 @@
+{
+  "depth": 2,
+  "maxDepth": 3,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-23T05:25:39.359Z",
+  "parentDimension": "Business Impact & ROI Potential",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Visual AI construction safety market size CAGR",
+      "dimension": null,
+      "researchGoal": "Assess market size and growth drivers for visual AI in construction safety",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Visual AI ROI metrics independent studies",
+      "dimension": null,
+      "researchGoal": "Identify key ROI metrics and cost-saving evidence from independent research on visual AI in construction safety",
+      "expectedResultFile": null
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "depth": 1,
+  "maxDepth": 2,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-24T05:12:10.146Z",
+  "parentDimension": "Risk & Regulatory Snapshot",
+  "totalQueries": 3,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Cloud ERP solution scope in South Korea",
+      "dimension": null,
+      "researchGoal": "Understand the definition and scope of cloud ERP solutions within the Korean regulatory context to identify compliance requirements and solution boundaries.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Cloud ERP market growth and investment Korea",
+      "dimension": null,
+      "researchGoal": "Analyze the total addressable market, growth rates, and investment trends for cloud ERP in South Korea to assess market opportunity and risks.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "Regulatory risks for cloud ERP in Korea",
+      "dimension": null,
+      "researchGoal": "Investigate specific regulatory, compliance, and policy risks cloud ERP providers face under South Korea's data privacy laws, including PIPA amendments and enforcement trends.",
+      "expectedResultFile": null
+    }
+  ]
+}

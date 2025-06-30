@@ -1,0 +1,17 @@
+{
+  "depth": 1,
+  "maxDepth": 3,
+  "folderName": "FollowUp_2",
+  "timestamp": "2025-06-23T05:28:11.251Z",
+  "parentDimension": "Business Impact & ROI Potential",
+  "totalQueries": 1,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Visual AI ROI metrics across industries",
+      "dimension": null,
+      "researchGoal": "Identify effective quantitative and qualitative ROI metrics used in independent studies for visual AI applications in various industries",
+      "expectedResultFile": null
+    }
+  ]
+}

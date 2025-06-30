@@ -1,0 +1,681 @@
+# Deep Research 및 Crawl4ai 연동 프로젝트 상세 구조
+
+## 1. 프로젝트 개요
+
+본 문서는 "Deep Research" TypeScript 프로젝트와 Python 기반의 "Crawl4ai" (Google Custom Search API 연동) 스크립트를 결합하여, 사용자의 초기 쿼리를 바탕으로 심층적인 웹 리서치를 수행하고, 그 결과를 바탕으로 보고서 및 답변을 생성하는 시스템의 전체 구조와 구현 방식을 상세히 기술합니다.
+
+**주요 목표:**
+- 사용자의 질문이나 주제에 대해 웹에서 관련성 높은 정보를 수집합니다.
+- 수집된 정보를 AI 모델을 활용하여 분석, 요약하고 심층적인 학습 내용을 추출합니다.
+- 최종적으로 구조화된 보고서와 간결한 답변을 생성합니다.
+
+**시스템 구성 요소:**
+1.  **Deep Research (TypeScript):**
+    *   사용자 인터페이스 (CLI 또는 API) 제공.
+    *   AI 에이전트들을 통해 연구 프로세스 관리 (쿼리 생성, 결과 처리, 보고서 작성 등).
+    *   `Crawl4aiCrawler`를 통해 Google Custom Search API 호출 및 Crawl4ai 스크립트 실행.
+    *   수집된 웹 콘텐츠를 AI로 분석하여 최종 결과물 생성.
+2.  **Google Custom Search API:**
+    *   특정 웹사이트 또는 전체 웹을 대상으로 사용자 정의 검색을 수행합니다.
+    *   `Crawl4aiCrawler`에 검색 결과(URL 목록 등)를 제공합니다.
+3.  **Crawl4ai 스크립트 (Python):**
+    *   `Crawl4aiCrawler`로부터 전달받은 URL 목록을 비동기적으로 크롤링합니다.
+    *   웹 페이지의 주요 콘텐츠를 Markdown 형식으로 추출합니다.
+    *   추출된 데이터를 JSON 파일 형태로 `Crawl4aiCrawler`에 전달합니다.
+
+**전체 데이터 흐름:**
+1.  사용자가 Deep Research 시스템에 초기 연구 쿼리 입력 (`src/run.ts` 또는 `src/api.ts` 통해).
+2.  (Deep Research - `src/deep-research.ts` - `deepResearch` 함수)
+    *   `generateSerpQueries` 에이전트가 초기 쿼리를 바탕으로 Google Custom Search에 사용할 검색어 목록 생성.
+3.  (Deep Research - `src/crawlers/crawl4ai/client.ts` - `Crawl4aiCrawler.search` 메소드)
+    *   생성된 각 검색어에 대해 `fetchGoogleSearchResults` 함수를 사용하여 Google Custom Search API 호출.
+    *   API로부터 검색 결과 (URL 목록, 스니펫 등) 수신.
+    *   정제된 URL 목록을 `run_crawl4ai.py` 스크립트에 인자로 전달하며 실행 (`runPythonProcess` 함수 사용).
+4.  (`src/crawlers/crawl4ai/scripts/run_crawl4ai.py`)
+    *   전달받은 URL들을 `crawl4ai` 라이브러리를 이용해 병렬/비동기 크롤링.
+    *   크롤링된 페이지 내용을 Markdown 형식으로 추출하여 임시 JSON 파일로 저장.
+5.  (Deep Research - `src/crawlers/crawl4ai/client.ts` - `Crawl4aiCrawler.search` 메소드)
+    *   `run_crawl4ai.py` 실행 완료 후, 저장된 임시 JSON 파일을 읽어오고 삭제.
+    *   결과를 `SearchResult` 형식으로 변환하여 반환.
+6.  (Deep Research - `src/deep-research.ts` - `deepResearch` 함수)
+    *   `processSerpResult` 에이전트가 크롤링된 Markdown 내용을 분석하여 학습 내용 및 후속 질문 추출.
+    *   설정된 깊이(depth)만큼 3~6단계를 반복하며 심층 연구 수행.
+7.  (Deep Research - `src/deep-research.ts`)
+    *   `writeFinalReport` 및 `writeFinalAnswer` 에이전트가 수집/분석된 전체 내용을 바탕으로 최종 보고서 및 답변 생성.
+8.  사용자에게 결과 제공.
+
+## 2. Deep Research (TypeScript 프로젝트)
+
+### 2.1. 프로젝트 구조 (`deep-research/`)
+
+```
+deep-research/
+├── src/
+│   ├── ai/
+│   │   ├── providers.ts       # AI 모델 (예: OpenAI GPT) 연동 설정 및 API 호출 관리. LLM 클라이언트 초기화, 모델 선택, 요청/응답 처리, 프롬프트 길이 제한 등.
+│   │   ├── text-splitter.ts   # 긴 텍스트를 AI 모델의 컨텍스트 제한에 맞게 분할하는 유틸리티.
+│   │   └── text-splitter.test.ts # text-splitter 유닛 테스트.
+│   ├── crawlers/              # 다양한 웹 크롤러/검색기 구현을 위한 추상화 및 구체 클래스.
+│   │   ├── index.ts           # 크롤러 인터페이스(Crawler, SearchOptions, SearchResult) 정의 및 크롤러 팩토리 함수(getCrawler) 제공.
+│   │   ├── crawl4ai/          # Crawl4ai 연동 크롤러.
+│   │   │   ├── client.ts      # Crawl4aiCrawler 클래스 구현. Google Custom Search API 호출 및 run_crawl4ai.py 스크립트 실행 로직 포함.
+│   │   │   └── scripts/
+│   │   │       └── run_crawl4ai.py # Python 스크립트. crawl4ai 라이브러리를 사용하여 실제 웹 크롤링 수행.
+│   │   ├── firecrawl/         # (예시) Firecrawl 서비스 연동 크롤러 (현재는 Crawl4ai가 주로 사용됨).
+│   │   │   └── client.ts
+│   │   └── google/            # (예시) Google API 직접 사용 크롤러 (현재는 Crawl4ai 내에서 Google Custom Search 사용).
+│   │       └── client.ts
+│   ├── api.ts                 # (선택 사항) 프로젝트를 API 서비스로 제공할 경우의 엔드포인트 정의 (예: Express.js 기반).
+│   ├── deep-research.ts       # 핵심 심층 연구 로직 및 주요 AI 에이전트(generateSerpQueries, processSerpResult, writeFinalReport, writeFinalAnswer, deepResearch) 구현.
+│   ├── feedback.ts            # (선택 사항) 사용자 피드백 생성 관련 AI 에이전트 (generateFeedback).
+│   ├── prompt.ts              # AI 에이전트들이 사용하는 기본 시스템 프롬프트 정의.
+│   └── run.ts                 # CLI (명령줄 인터페이스)를 통해 프로젝트를 실행하는 로직.
+├── .env.example               # 필요한 환경 변수 예시 파일. 실제 사용 시 .env.local로 복사하여 값 설정.
+├── .env.local                 # (Git에 포함되지 않음) 실제 환경 변수 설정 파일 (API 키 등 민감 정보 포함).
+├── package.json               # Node.js 프로젝트 설정 파일 (의존성, 스크립트 등).
+├── tsconfig.json              # TypeScript 컴파일러 설정 파일.
+└── README.md                  # 프로젝트 설명 및 사용법 안내.
+```
+
+### 2.2. 주요 모듈 상세 설명
+
+#### 2.2.1. `src/ai/providers.ts`
+- **역할:** 다양한 AI 언어 모델 (LLM) 프로바이더 (예: OpenAI, Anthropic 등)와의 연동을 관리합니다.
+- **주요 기능:**
+    - LLM 클라이언트 초기화 (API 키, 모델명 등 설정).
+    - 선택된 AI 모델에 프롬프트를 전송하고 응답을 받는 표준 인터페이스 제공.
+    - 응답 스트리밍, JSON 모드 강제, 함수 호출(function calling) 등의 고급 기능 지원.
+    - 토큰 사용량 계산 및 로깅.
+    - API 요청 관련 오류 처리 및 재시도 로직 (필요시).
+- **설정:** `.env.local` 파일에 `OPENAI_API_KEY`, `OPENAI_MODEL_NAME` 등의 환경 변수를 통해 API 키와 사용할 모델을 지정합니다.
+
+#### 2.2.2. `src/ai/text-splitter.ts`
+- **역할:** AI 모델이 한 번에 처리할 수 있는 컨텍스트 윈도우(토큰 제한)를 초과하는 긴 텍스트를 의미론적으로 유사한 작은 조각(chunk)으로 분할합니다.
+- **주요 기능:**
+    - 다양한 분할 기준 제공 (문자 수, 토큰 수, 문단, 문장 등).
+    - 분할 시 조각 간의 내용 중첩(overlap) 옵션 제공하여 문맥 유지.
+    - 특정 AI 모델의 토큰화 방식(tokenizer)을 고려하여 분할 가능.
+- **사용 예시:** 웹에서 크롤링한 긴 기사 내용을 AI가 분석하기 전에 이 모듈을 사용하여 적절한 크기로 나눕니다.
+
+#### 2.2.3. `src/crawlers/index.ts`
+- **역할:** 다양한 종류의 웹 크롤러 또는 검색 API 클라이언트를 일관된 방식으로 사용하기 위한 추상화 계층을 제공합니다.
+- **주요 인터페이스 및 함수:**
+    - `Crawler` 인터페이스: 모든 크롤러 구현체가 따라야 하는 표준 메소드(`search`, `scrape` 등)를 정의합니다.
+        - `search(query: string, options?: SearchOptions): Promise<SearchResult[]>`: 검색 엔진을 통해 쿼리에 해당하는 URL 및 메타데이터 목록을 가져옵니다.
+        - `scrape?(url: string, options?: ScrapeOptions): Promise<ScrapeResult>`: (선택적) 단일 URL의 내용을 스크래핑합니다. `crawl4ai`의 경우 `search` 메소드 내에서 크롤링까지 함께 처리합니다.
+    - `SearchOptions`: 검색 시 사용할 옵션 (결과 개수 제한, 타임아웃 등).
+    - `SearchResult`: 검색 결과 항목의 형식 (URL, 제목, 스니펫, 크롤링된 Markdown 내용 등).
+    - `ScrapeOptions`: 스크래핑 시 사용할 옵션 (스크래핑 깊이, 콘텐츠 유형 등).
+    - `ScrapeResult`: 스크래핑 결과 형식 (URL, Markdown 내용, 메타데이터 등).
+    - `getCrawler(type?: string): Crawler`: 환경 변수 `CRAWLER_TYPE` (기본값: `crawl4ai`) 또는 인자로 주어진 `type`에 따라 적절한 크롤러 인스턴스를 생성하여 반환하는 팩토리 함수입니다.
+        - 현재 지원되는 타입: `crawl4ai`, `firecrawl`, `google` (예시).
+
+#### 2.2.4. `src/crawlers/crawl4ai/client.ts` - `Crawl4aiCrawler` 클래스
+- **역할:** `Crawler` 인터페이스를 구현하며, Google Custom Search API와 `run_crawl4ai.py` Python 스크립트를 연동하여 웹 검색 및 콘텐츠 스크래핑 기능을 제공하는 핵심 클래스입니다.
+- **주요 속성:**
+    - `pythonPath`: Python 실행 파일 경로 (환경 변수 `PYTHON_PATH` 또는 기본값 사용).
+    - `scriptPath`: `run_crawl4ai.py` 스크립트의 절대 경로.
+    - `googleApiKey`: Google Custom Search API 키 (환경 변수 `GOOGLE_SEARCH_API_KEY`).
+    - `googleSearchEngineId`: Google Custom Search 엔진 ID (환경 변수 `GOOGLE_SEARCH_ENGINE_ID`).
+- **핵심 메소드: `search(query: string, options?: SearchOptions): Promise<SearchResult[]>`**
+    1.  **`fetchGoogleSearchResults(currentQuery, currentRetry = 0)` 내부 함수 호출:**
+        *   `this.googleApiKey`와 `this.googleSearchEngineId`를 사용하여 Google Custom Search API에 `currentQuery`를 전송합니다.
+        *   요청 URL 형식: `https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={ENGINE_ID}&q={QUERY}&num=10` (기본 10개 결과 요청).
+        *   API 응답(JSON)에서 검색 결과 아이템(`items`)을 추출합니다 (각 아이템은 제목, 링크, 스니펫 등을 포함).
+        *   API 호출 실패 시 (특히 429 에러 - 요청 한도 초과) 최대 5회까지 지수 백오프(1초, 2초, 4초, 8초, 16초)를 적용한 재시도 로직 수행.
+        *   최종 실패 시 에러 throw.
+    2.  **URL 목록 처리:**
+        *   `fetchGoogleSearchResults`로부터 받은 검색 결과에서 URL(`link`)들만 추출합니다.
+        *   `options.limit` (예: `deep-research`의 `breadth` 설정)이 주어지면 해당 개수만큼 URL을 잘라냅니다.
+        *   URL 목록이 비어있으면 빈 배열 반환.
+    3.  **`runPythonProcess(urlsToCrawl, originalQuery, searchOptions)` 내부 함수 호출:**
+        *   임시 디렉터리 (`os.tmpdir()/deep-research-crawl4ai`) 내에 고유한 이름 (UUID 기반)으로 출력 JSON 파일 경로 (`outputFilePath`)를 생성합니다.
+        *   실행할 Python 명령어 및 인자 구성:
+            *   명령어: `this.pythonPath` (예: `C:\Users\user\AppData\Local\Programs\Python\Python312\python.exe`)
+            *   스크립트: `this.scriptPath` (예: `c:\Users\user\AI_PJT\deep-research\src\crawlers\crawl4ai\scripts\run_crawl4ai.py`)
+            *   인자:
+                *   `--query`: `originalQuery` (Google 검색 시 사용된 원본 쿼리)
+                *   `--urls`: `urlsToCrawl` 배열의 각 URL (각 URL마다 `--urls` 플래그 반복. 예: `--urls http://... --urls http://...`)
+                *   `--output`: `outputFilePath` (Python 스크립트가 결과를 저장할 파일 경로)
+                *   `--timeout` (선택): `searchOptions.timeout` 값 (Crawl4ai 내부 타임아웃 설정)
+                *   `--limit` (선택): `searchOptions.limit` 값 (실제 크롤링할 URL 개수 제한, Google 검색 결과 수와 다를 수 있음)
+                *   `--max-tokens` (선택): `searchOptions.scrapeOptions?.maxTokens` (Crawl4ai가 페이지당 추출할 최대 토큰 수)
+        *   `child_process.spawn`을 사용하여 Python 스크립트를 비동기적으로 실행합니다.
+            *   `PYTHONIOENCODING: 'UTF-8'` 환경 변수를 설정하여 Python 스크립트의 표준 입출력 인코딩을 UTF-8로 강제합니다 (한글 등 다국어 처리 문제 방지).
+            *   자식 프로세스의 `stdout` (표준 출력)을 부모 Node.js 프로세스의 `stdout`으로 직접 파이핑(`pipe`)합니다. 이는 `crawl4ai`가 TUI(Text User Interface)를 사용하여 진행 상황을 표시할 때, 그 출력이 Node.js 콘솔에 그대로 나타나도록 하기 위함입니다.
+            *   자식 프로세스의 `stderr` (표준 에러)는 버퍼에 수집하여 로깅합니다.
+        *   프로세스 종료(`close` 이벤트) 또는 에러(`error` 이벤트)를 기다립니다.
+            *   종료 코드가 0 (성공)이면, `outputFilePath`에 저장된 JSON 파일을 읽고 파싱하여 결과 반환.
+            *   종료 코드가 0이 아니거나 에러 발생 시, 수집된 `stderr` 내용을 포함하여 에러 throw.
+        *   `finally` 블록에서 임시 출력 파일(`outputFilePath`) 삭제 시도.
+    4.  **결과 변환 및 반환:**
+        *   `runPythonProcess`로부터 받은 결과 (Python 스크립트가 생성한 JSON 파일 내용)를 `convertToFirecrawlFormat` 메소드를 사용하여 `SearchResult[]` 형식으로 변환하여 반환합니다.
+- **`convertToFirecrawlFormat(data: any[], originalQuery: string): SearchResult[]` 내부 함수:**
+    *   `run_crawl4ai.py`의 출력 형식 (각 항목이 `url`, `markdown`, `title`, `error` 등을 가짐)을 `deep-research` 시스템에서 사용하는 `SearchResult` 형식 (`query`, `url`, `title`, `markdown`, `error` 필드)으로 매핑합니다.
+
+#### 2.2.5. `src/deep-research.ts`
+- **역할:** 심층 연구를 수행하는 핵심 로직과 AI 에이전트들을 포함합니다.
+- **주요 AI 에이전트 및 함수:**
+    - **`generateSerpQueries(query: string, previousLearnings: string[], breadth: number, llm: ChatOpenAI)`:**
+        *   **입력:** 현재 쿼리, 이전 연구 단계에서 학습된 내용 목록, 생성할 검색어 개수(breadth), LLM 인스턴스.
+        *   **역할:** 사용자의 초기 쿼리와 이전 연구에서 얻은 지식을 바탕으로, 더 깊고 넓은 정보를 얻기 위한 새로운 검색 엔진 질의어(SERP queries) 목록을 생성합니다.
+        *   **출력:** 생성된 검색어 문자열 배열.
+        *   **프롬프트 특징:** 이전 학습 내용을 참고하여 중복을 피하고 탐색 범위를 확장하는 질의어를 만들도록 유도.
+    - **`processSerpResult(query: string, serp_result: string, llm: ChatOpenAI)`:**
+        *   **입력:** 현재 검색어, 해당 검색어에 대한 크롤링 결과 (Markdown 형식의 웹페이지 내용), LLM 인스턴스.
+        *   **역할:** 크롤링된 웹페이지 내용을 분석하여 주요 학습 내용(learnings)과, 이 내용을 바탕으로 추가 조사가 필요한 후속 질문(next_queries)을 추출합니다.
+        *   **출력:** `{ learnings: string[], next_queries: string[] }` 형태의 객체.
+        *   **프롬프트 특징:** 주어진 내용을 요약하고, 비판적으로 분석하여 새로운 질문을 도출하도록 유도.
+    - **`writeFinalReport(query: string, allLearnings: string[], allUrls: string[], llm: ChatOpenAI)`:**
+        *   **입력:** 초기 쿼리, 전체 연구 과정에서 수집된 모든 학습 내용, 관련 URL 목록, LLM 인스턴스.
+        *   **역할:** 수집된 모든 정보를 종합하여 구조화된 Markdown 형식의 최종 보고서를 작성합니다.
+        *   **출력:** Markdown 형식의 보고서 문자열.
+        *   **프롬프트 특징:** 서론, 본론(주요 학습 내용, 출처 URL 명시), 결론 형식으로 상세하고 이해하기 쉽게 작성하도록 지시.
+    - **`writeFinalAnswer(query: string, allLearnings: string[], llm: ChatOpenAI)`:**
+        *   **입력:** 초기 쿼리, 전체 연구 과정에서 수집된 모든 학습 내용, LLM 인스턴스.
+        *   **역할:** 초기 쿼리에 대한 간결하고 직접적인 답변을 생성합니다.
+        *   **출력:** 답변 문자열.
+        *   **프롬프트 특징:** 핵심 내용을 요약하여 명확한 답변을 제공하도록 지시.
+    - **`deepResearch(query: string, serp_queries: string[], learnings: string[], urls: string[], current_depth: number, config: DeepResearchConfig, llm: ChatOpenAI)`:**
+        *   **입력:** 현재 쿼리, 처리할 검색어 목록, 현재까지의 학습 내용, 수집된 URL 목록, 현재 연구 깊이, 연구 설정(최대 깊이, 너비 등), LLM 인스턴스.
+        *   **역할:** 전체 심층 연구 프로세스를 재귀적으로 조정하고 관리합니다.
+            1.  `serp_queries` 목록의 각 검색어에 대해 `Crawl4aiCrawler`를 통해 검색 및 크롤링 수행 (`getCrawler().search()`).
+            2.  각 크롤링 결과를 `processSerpResult` 에이전트에 전달하여 학습 내용과 후속 질문 추출.
+            3.  수집된 학습 내용과 URL을 누적.
+            4.  `current_depth`가 설정된 최대 깊이(`config.depth`) 미만이면, 추출된 후속 질문들을 바탕으로 `generateSerpQueries`를 호출하여 다음 단계의 검색어 생성.
+            5.  생성된 검색어들과 누적된 학습 내용을 가지고 `deepResearch` 함수를 재귀 호출하여 다음 깊이의 연구 수행.
+        *   **출력:** 최종적으로 모든 학습 내용과 URL 목록을 반환.
+- **기타 설정:**
+    - `ConcurrencyLimit`: 동시에 처리할 수 있는 검색 쿼리 수 (기본값 2). `Promise.all`과 `p-limit` 같은 라이브러리를 사용하여 동시성 제어.
+
+#### 2.2.6. `src/prompt.ts`
+- **역할:** AI 에이전트들이 일관된 톤과 역할을 유지하도록 기본 시스템 프롬프트를 정의합니다.
+- **주요 내용 (`systemPrompt` 함수):**
+    - AI를 특정 분야의 전문 연구원 또는 분석가로 설정.
+    - 사용자에게 제공할 정보의 상세 수준, 정확성, 객관성 등을 지시.
+    - 답변 형식이나 스타일에 대한 가이드라인 제공.
+    - 이 시스템 프롬프트는 각 AI 에이전트의 특정 작업 프롬프트와 결합되어 사용됩니다.
+
+#### 2.2.7. `src/run.ts`
+- **역할:** 명령줄 인터페이스(CLI)를 통해 `deep-research` 프로젝트를 실행하는 엔트리 포인트입니다.
+- **주요 기능:**
+    - `commander` 또는 `yargs`와 같은 라이브러리를 사용하여 CLI 인자(쿼리, 깊이, 너비 등) 파싱.
+    - 파싱된 인자를 바탕으로 `DeepResearchConfig` 객체 생성.
+    - `src/ai/providers.ts`를 통해 LLM 클라이언트 초기화.
+    - `deepResearch` 함수를 호출하여 연구 프로세스 시작.
+    - `writeFinalReport` 및 `writeFinalAnswer`를 호출하여 최종 결과 생성 및 콘솔 출력.
+    - 필요한 경우, 연구 진행 상황이나 중간 결과를 로깅.
+
+### 2.3. 환경 변수 설정
+
+프로젝트 실행에 필요한 주요 설정값들은 환경 변수를 통해 관리됩니다. 루트 디렉터리에 있는 `.env.example` 파일을 복사하여 `.env.local` 파일을 생성하고, 실제 값으로 채워야 합니다. `.env.local` 파일은 `.gitignore`에 의해 버전 관리에서 제외되므로 API 키 등 민감한 정보를 안전하게 보관할 수 있습니다.
+
+**주요 환경 변수 (`.env.local` 파일 예시):**
+```env
+# AI 모델 설정 (OpenAI 기준)
+OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+OPENAI_MODEL_NAME="gpt-4-turbo-preview"
+# OPENAI_BASE_URL="https://api.openai.com/v1" # 필요시 OpenAI 호환 API 엔드포인트 지정
+
+# 크롤러 설정
+CRAWLER_TYPE="crawl4ai" # 사용할 크롤러 타입 (crawl4ai, firecrawl, google 등)
+# CRAWLER_BASE_URL="http://localhost:8080" # Firecrawl 등 특정 크롤러의 API 엔드포인트
+# CRAWLER_API_KEY="fc-xxxxxxxxxxxxxx" # Firecrawl API 키
+
+# Crawl4aiCrawler 전용 설정
+PYTHON_PATH="C:\Users\user\AppData\Local\Programs\Python\Python312\python.exe" # 로컬 Python 실행 파일 경로 (Windows 예시)
+# PYTHON_PATH="/usr/bin/python3" # (Linux/MacOS 예시)
+GOOGLE_SEARCH_API_KEY="AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # Google Custom Search API 키
+GOOGLE_SEARCH_ENGINE_ID="xxxxxxxxxxxxxxxxxxxxxxxxx:xxxxxxxxx" # Google Custom Search 엔진 ID
+
+# 로깅 레벨 (선택 사항)
+# LOG_LEVEL="debug" # (info, warn, error, debug)
+```
+
+**환경 변수 적용:**
+- `dotenv` 라이브러리가 `package.json`에 포함되어 있어, 애플리케이션 시작 시 자동으로 `.env.local` 파일을 읽어 `process.env` 객체에 로드합니다.
+
+### 2.4. 실행 방법 (CLI)
+
+1.  **의존성 설치:**
+    ```bash
+    npm install
+    # 또는
+    yarn install
+    ```
+
+2.  **환경 변수 설정:**
+    -   프로젝트 루트에 `.env.local` 파일을 생성하고 위 예시를 참고하여 API 키 등을 입력합니다.
+
+3.  **빌드 (TypeScript -> JavaScript):**
+    ```bash
+    npm run build
+    # 또는
+    yarn build
+    ```
+    이 명령어는 `tsconfig.json` 설정에 따라 `src` 디렉터리의 TypeScript 파일들을 `dist` 디렉터리에 JavaScript 파일로 컴파일합니다.
+
+4.  **CLI 실행:**
+    컴파일된 JavaScript 파일을 직접 실행하거나, `package.json`에 정의된 스크립트를 사용합니다.
+
+    **기본 실행 (package.json 스크립트 사용):**
+    ```bash
+    npm run start -- "사용자의 초기 연구 질문 또는 주제"
+    # 예시:
+    # npm run start -- "인공지능의 최신 발전 동향과 사회적 영향"
+    ```
+    `package.json`의 `scripts.start`는 보통 `node dist/run.js` 와 같이 설정됩니다.
+
+    **CLI 옵션과 함께 실행:**
+    `src/run.ts` (또는 컴파일된 `dist/run.js`)는 추가적인 CLI 옵션을 받을 수 있도록 구현될 수 있습니다 (예: `commander` 라이브러리 사용).
+    ```bash
+    node dist/run.js "인공지능의 최신 발전 동향" --depth 3 --breadth 5
+    ```
+    -   `"인공지능의 최신 발전 동향"`: 필수 인자로, 연구할 주제 또는 질문입니다.
+    -   `--depth <숫자>` (선택): 연구의 깊이를 지정합니다 (기본값은 `src/deep-research.ts` 내 `DeepResearchConfig`에 설정된 값, 예: 2).
+    -   `--breadth <숫자>` (선택): 각 연구 단계에서 생성할 검색 쿼리의 개수를 지정합니다 (기본값 예: 4).
+
+    **개발 중 실행 (ts-node 사용, 빌드 불필요):**
+    `ts-node`가 설치되어 있다면 TypeScript 파일을 직접 실행할 수 있습니다.
+    ```bash
+    npx ts-node src/run.ts "인공지능의 최신 발전 동향과 사회적 영향"
+    # 옵션과 함께:
+    # npx ts-node src/run.ts "인공지능의 최신 발전 동향" --depth 3 --breadth 5
+    ```
+
+5.  **결과 확인:**
+    -   실행이 완료되면 콘솔에 최종 보고서(Markdown)와 최종 답변이 출력됩니다.
+    -   연구 과정 중의 로그나 중간 결과도 콘솔에 표시될 수 있습니다.
+
+
+## 3. Google Custom Search API 설정 및 사용
+
+Google Custom Search API는 `Crawl4aiCrawler`가 웹에서 초기 검색 결과를 가져오는 데 사용됩니다.
+
+### 3.1. API 키 및 검색 엔진 ID 발급
+
+1.  **Google Cloud Console 접속:** [https://console.cloud.google.com/](https://console.cloud.google.com/)
+2.  **프로젝트 생성 또는 선택:** API를 사용할 Google Cloud 프로젝트를 선택하거나 새로 생성합니다.
+3.  **Custom Search API 활성화:**
+    *   "API 및 서비스" > "라이브러리"로 이동합니다.
+    *   "Custom Search API"를 검색하여 선택하고 "사용 설정"을 클릭합니다.
+4.  **API 키 생성:**
+    *   "API 및 서비스" > "사용자 인증 정보"로 이동합니다.
+    *   "+ 사용자 인증 정보 만들기" > "API 키"를 선택하여 생성합니다. 생성된 API 키를 안전하게 보관합니다.
+    *   **보안 참고:** API 키는 프로덕션 환경에서 특정 IP 주소 또는 웹사이트로 제한하는 것이 좋습니다.
+5.  **Programmable Search Engine (구 Custom Search Engine) 설정:**
+    *   [https://programmablesearchengine.google.com/](https://programmablesearchengine.google.com/) 에 접속합니다.
+    *   "추가"를 클릭하여 새 검색 엔진을 만듭니다.
+    *   검색할 사이트를 지정합니다 (예: 특정 도메인 또는 "전체 웹 검색" 옵션 활성화).
+    *   생성된 검색 엔진의 "설정" > "기본" 탭에서 "검색 엔진 ID"를 복사합니다.
+
+### 3.2. `Crawl4aiCrawler`에서의 사용
+
+-   `src/crawlers/crawl4ai/client.ts` 내의 `Crawl4aiCrawler` 클래스는 생성자에서 환경 변수 `GOOGLE_SEARCH_API_KEY`와 `GOOGLE_SEARCH_ENGINE_ID`를 읽어옵니다.
+-   `search` 메소드 내의 `fetchGoogleSearchResults` 함수가 이 키와 ID를 사용하여 Google Custom Search API를 호출하여 검색어에 대한 URL 목록을 가져옵니다.
+-   호출 예시: `https://www.googleapis.com/customsearch/v1?key={API_KEY}&cx={ENGINE_ID}&q={QUERY}&num=10`
+
+## 4. Crawl4ai 스크립트 (`src/crawlers/crawl4ai/scripts/run_crawl4ai.py`) 상세
+
+### 4.1. 위치 및 역할
+
+-   **위치:** `deep-research/src/crawlers/crawl4ai/scripts/run_crawl4ai.py`
+-   **역할:** `Crawl4aiCrawler` (TypeScript)로부터 URL 목록과 기타 옵션들을 명령줄 인자로 받아, `crawl4ai` Python 라이브러리를 사용하여 해당 URL들의 웹 콘텐츠를 비동기적으로 크롤링하고, 그 결과를 Markdown 형식으로 추출하여 지정된 출력 파일(JSON 형식)에 저장합니다.
+
+### 4.2. 주요 로직
+
+1.  **명령줄 인자 파싱:** `argparse` 라이브러리를 사용하여 다음 인자들을 파싱합니다.
+    *   `--query`: 원본 검색 쿼리 (로깅 또는 메타데이터용).
+    *   `--urls`: 크롤링할 URL 목록 (여러 번 지정 가능, `action='append'`).
+    *   `--output`: 크롤링 결과를 저장할 JSON 파일 경로.
+    *   `--timeout`: (선택) 각 URL 크롤링 시 타임아웃 (초 단위).
+    *   `--limit`: (선택) 크롤링할 최대 URL 개수.
+    *   `--max-tokens`: (선택) 페이지당 추출할 최대 토큰 수 (컨텐츠 길이 제한).
+2.  **`crawl4ai` 라이브러리 초기화 및 실행:**
+    *   `Crawler` 클래스 (또는 `crawl_urls` 함수)를 사용하여 전달받은 URL 목록에 대해 크롤링을 수행합니다.
+    *   `crawl4ai`는 내부적으로 `BeautifulSoup`, `requests` (또는 `httpx`), `readability-lxml` 등을 활용하여 웹 페이지를 가져오고 주요 콘텐츠를 추출합니다.
+    *   비동기 처리 (`asyncio`, `aiohttp`)를 통해 여러 URL을 효율적으로 동시에 처리합니다.
+    *   TUI (Text User Interface)를 통해 진행 상황을 실시간으로 표시할 수 있습니다. (이 부분은 `Crawl4aiCrawler`에서 `stdout`을 파이핑하여 Node.js 콘솔에 표시됩니다.)
+3.  **결과 수집 및 저장:**
+    *   각 URL에 대한 크롤링 결과 (추출된 Markdown 콘텐츠, 원본 URL, 제목, 발생한 에러 등)를 수집합니다.
+    *   수집된 모든 결과를 리스트 형태로 구성하여, `--output` 인자로 지정된 파일 경로에 JSON 형식으로 저장합니다.
+    *   JSON 파일의 각 항목은 대략 다음과 같은 구조를 가집니다:
+        ```json
+        [
+          {
+            "url": "크롤링된 URL",
+            "markdown": "추출된 Markdown 내용",
+            "title": "페이지 제목 (있는 경우)",
+            "error": "에러 메시지 (실패 시)"
+          },
+          // ... 다른 URL 결과들
+        ]
+        ```
+4.  **오류 처리:**
+    *   개별 URL 크롤링 실패 시, 해당 URL에 대한 에러 정보를 결과에 포함시키고 다음 URL 처리를 계속합니다.
+    *   스크립트 실행 중 심각한 오류 발생 시 `stderr`로 에러 메시지를 출력하고 0이 아닌 종료 코드로 종료합니다.
+
+### 4.3. 명령줄 인자 상세 (Python 스크립트 관점)
+
+```python
+# 예시: run_crawl4ai.py 내부의 argparse 설정 부분
+import argparse
+parser = argparse.ArgumentParser(description="Crawl URLs using crawl4ai and save results to a JSON file.")
+parser.add_argument('--query', type=str, required=True, help="Original search query.")
+parser.add_argument('--urls', action='append', required=True, help="URLs to crawl. Can be specified multiple times.")
+parser.add_argument('--output', type=str, required=True, help="Path to the output JSON file.")
+parser.add_argument('--timeout', type=int, default=30, help="Timeout for crawling each URL in seconds.")
+parser.add_argument('--limit', type=int, help="Maximum number of URLs to crawl from the provided list.")
+parser.add_argument('--max-tokens', type=int, help="Maximum tokens to extract per page.")
+# args = parser.parse_args()
+```
+-   `--urls` 인자는 `action='append'`로 설정되어, `Crawl4aiCrawler`에서 `--urls http://... --urls http://...` 와 같이 여러 번 전달하면 `args.urls`는 URL 문자열 리스트가 됩니다.
+
+### 4.4. 필요한 Python 라이브러리
+
+`run_crawl4ai.py` 스크립트 및 `crawl4ai` 라이브러리 실행에 필요한 주요 Python 패키지들은 다음과 같으며, 일반적으로 `requirements.txt` 파일로 관리됩니다.
+
+**`deep-research/src/crawlers/crawl4ai/scripts/requirements.txt` (예상 내용):**
+```txt
+crawl4ai>=0.8.0  # 실제 버전은 프로젝트에 맞게 조정
+# crawl4ai가 의존하는 다른 패키지들 (예: beautifulsoup4, requests, lxml, readability-lxml, aiohttp 등)은
+# crawl4ai 설치 시 자동으로 함께 설치됩니다.
+# 특정 버전 명시가 필요하면 여기에 추가합니다.
+```
+
+**설치 명령어:**
+Python 가상 환경 내에서 다음 명령어를 실행합니다.
+```bash
+pip install -r deep-research/src/crawlers/crawl4ai/scripts/requirements.txt
+```
+또는 `crawl4ai`만 직접 설치해도 됩니다 (의존성 자동 설치):
+```bash
+pip install crawl4ai
+```
+
+## 5. Python 환경 설정
+
+`run_crawl4ai.py` 스크립트를 실행하기 위한 Python 환경 설정 방법입니다.
+
+### 5.1. 권장 Python 버전
+
+-   Python 3.8 이상 권장 (Crawl4ai 및 관련 라이브러리 호환성 고려).
+
+### 5.2. 가상 환경 설정 및 의존성 설치
+
+프로젝트별로 독립적인 Python 환경을 구성하기 위해 가상 환경 사용을 강력히 권장합니다.
+
+1.  **Python 설치 확인:**
+    ```bash
+    python --version
+    # 또는 (Python 3가 python3로 링크된 경우)
+    python3 --version
+    ```
+    설치되어 있지 않다면 [Python 공식 웹사이트](https://www.python.org/downloads/)에서 다운로드하여 설치합니다. 설치 시 "Add Python to PATH" 옵션을 선택하는 것이 좋습니다.
+
+2.  **가상 환경 생성 (예: `.venv` 폴더):**
+    `deep-research` 프로젝트 루트 디렉터리 또는 `src/crawlers/crawl4ai/scripts/` 디렉터리에서 다음 명령어를 실행합니다.
+    ```bash
+    # 프로젝트 루트에서 생성 시
+    python -m venv .venv
+    # 또는 스크립트 디렉터리에서 생성 시
+    # cd deep-research/src/crawlers/crawl4ai/scripts/
+    # python -m venv .venv
+    ```
+
+3.  **가상 환경 활성화:**
+    -   **Windows (PowerShell):**
+        ```powershell
+        .\.venv\Scripts\Activate.ps1
+        ```
+        (실행 정책 오류 시: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`)
+    -   **Windows (Command Prompt):**
+        ```cmd
+        .\.venv\Scripts\activate.bat
+        ```
+    -   **Linux / macOS (bash/zsh):**
+        ```bash
+        source .venv/bin/activate
+        ```
+    활성화되면 프롬프트 앞에 `(.venv)`가 표시됩니다.
+
+4.  **의존성 설치:**
+    가상 환경이 활성화된 상태에서 `requirements.txt` 파일이 있는 경우 해당 파일을 사용하거나, 직접 패키지를 설치합니다.
+    ```bash
+    # requirements.txt 사용 시 (파일이 deep-research/src/crawlers/crawl4ai/scripts/requirements.txt 에 있다고 가정)
+    pip install -r src/crawlers/crawl4ai/scripts/requirements.txt
+
+    # 또는 crawl4ai 직접 설치 시
+    pip install crawl4ai
+    ```
+
+5.  **가상 환경 비활성화:**
+    ```bash
+    deactivate
+    ```
+
+## 5. 시스템 아키텍처, 데이터 흐름, 의존성
+
+### 5.1. 시스템 아키텍처
+
+이 시스템은 TypeScript로 작성된 메인 애플리케이션 (`deep-research`)과 Python으로 작성된 웹 크롤링 스크립트 (`run_crawl4ai.py`), 그리고 여러 외부 API(Google Custom Search, OpenAI 등)를 연동하여 심층적인 연구 조사를 자동화합니다.
+
+#### 5.1.1. 주요 컴포넌트
+
+1.  **`deep-research` (TypeScript, Node.js 기반):**
+    *   **역할:** 전체 연구 프로세스를 총괄하고 오케스트레이션하는 핵심 애플리케이션입니다.
+    *   사용자로부터 연구 주제를 입력받아 CLI를 통해 실행됩니다.
+    *   Google Custom Search API를 호출하여 초기 검색 URL을 확보합니다.
+    *   `run_crawl4ai.py` Python 스크립트를 실행하여 웹 페이지 콘텐츠를 크롤링합니다.
+    *   크롤링된 데이터를 처리하고, AI 에이전트(예: Editor, Writer, Critic)를 통해 OpenAI API와 상호작용하여 정보를 분석, 요약, 종합하고 최종 보고서를 생성합니다.
+    *   주요 모듈: `src/run.ts` (CLI), `src/deep-research.ts` (핵심 로직), `src/crawlers/crawl4ai/client.ts` (크롤러 클라이언트), `src/ai/providers.ts` (AI 모델 연동).
+
+2.  **Google Custom Search API (외부 서비스):**
+    *   **역할:** 사용자의 연구 주제와 관련된 웹 페이지 URL 목록을 제공합니다.
+    *   `deep-research`의 `Crawl4aiCrawler`가 API 키와 검색 엔진 ID를 사용하여 호출합니다.
+
+3.  **`run_crawl4ai.py` (Python 스크립트):**
+    *   **위치:** `deep-research/src/crawlers/crawl4ai/scripts/run_crawl4ai.py`
+    *   **역할:** `deep-research`로부터 전달받은 URL 목록을 `crawl4ai` Python 라이브러리를 사용하여 크롤링하고, 추출된 콘텐츠를 Markdown 형식으로 임시 JSON 파일에 저장합니다.
+    *   Node.js의 `child_process.spawn`을 통해 실행됩니다.
+
+4.  **`crawl4ai` (Python 라이브러리):**
+    *   **역할:** 웹 페이지의 HTML을 가져와 주요 콘텐츠(텍스트, 이미지 등)를 추출하고 Markdown으로 변환하는 핵심 크롤링 및 파싱 로직을 수행합니다.
+    *   비동기 처리를 지원하여 효율적인 크롤링이 가능합니다.
+
+5.  **OpenAI API (또는 유사 LLM 제공자, 외부 서비스):**
+    *   **역할:** `deep-research`의 AI 에이전트들이 크롤링된 데이터를 바탕으로 심층 분석, 요약, 비평, 보고서 초안 작성 등의 지능적인 작업을 수행할 수 있도록 강력한 언어 모델 기능을 제공합니다.
+    *   API 키를 통해 인증 및 호출됩니다.
+
+#### 5.1.2. 컴포넌트 간 상호작용 다이어그램 (텍스트 기반)
+
+```
+[사용자 CLI] --연구 주제--> [deep-research (Node.js)]
+                     |           |
+                     |           | 1. Google Custom Search API 호출 (쿼리)
+                     |           |-----> [Google Custom Search API]
+                     |           |           <----- (URL 목록)
+                     |           |
+                     |           | 2. run_crawl4ai.py 실행 (URL 목록 전달)
+                     |           |-----> [run_crawl4ai.py (Python)] --사용 crawl4ai lib--> [웹 페이지들]
+                     |           |           <----- (크롤링 결과 JSON 파일 경로)
+                     |           |
+                     |           | 3. 크롤링 결과 처리
+                     |           |
+                     |           | 4. OpenAI API 호출 (프롬프트 + 컨텐츠)
+                     |           |-----> [OpenAI API]
+                     |           |           <----- (분석/요약/생성 결과)
+                     |           |
+                     |           V
+                     |---- 최종 보고서/답변 ----> [사용자 CLI]
+```
+
+#### 5.1.3. 기술 스택 요약
+
+*   **메인 애플리케이션:** Node.js, TypeScript
+*   **웹 크롤링:** Python, `crawl4ai` 라이브러리
+*   **외부 API 연동:** Google Custom Search API, OpenAI API
+*   **프로세스 관리:** Node.js `child_process`
+*   **데이터 형식:** JSON, Markdown
+
+### 5.2. 데이터 흐름
+
+1.  **입력 (Input):**
+    *   사용자가 CLI를 통해 `deep-research` 애플리케이션에 연구 주제(쿼리)와 선택적 파라미터(depth, breadth 등)를 전달합니다. (`src/run.ts`)
+
+2.  **초기 정보 수집 (Initial Information Gathering):**
+    *   `DeepResearch` 인스턴스가 생성되고, `Crawl4aiCrawler`가 초기화됩니다. (`src/deep-research.ts`, `src/crawlers/crawl4ai/client.ts`)
+    *   `Crawl4aiCrawler`는 `GOOGLE_SEARCH_API_KEY`와 `GOOGLE_SEARCH_ENGINE_ID`를 사용하여 Google Custom Search API에 연구 주제를 쿼리합니다.
+    *   API로부터 관련 웹 페이지 URL 목록을 응답으로 받습니다.
+
+3.  **웹 콘텐츠 크롤링 (Web Content Crawling):**
+    *   `Crawl4aiCrawler`는 수신한 URL 목록과 원본 쿼리, 기타 옵션(타임아웃, 최대 토큰 등)을 인자로 하여 `run_crawl4ai.py` Python 스크립트를 `child_process.spawn`을 통해 실행합니다.
+    *   `run_crawl4ai.py`는 `crawl4ai` 라이브러리를 사용하여 각 URL의 웹 페이지를 비동기적으로 방문하고, 주요 콘텐츠를 추출하여 Markdown 형식으로 변환합니다.
+    *   추출된 데이터 (URL, Markdown 콘텐츠, 제목, 에러 정보 등)는 리스트 형태로 구성되어 임시 JSON 파일 (`/tmp/crawl4ai_results_{uuid}.json`)에 저장됩니다.
+    *   Python 스크립트는 실행 완료 후, 생성된 JSON 파일의 경로를 `stdout`으로 출력하거나, 성공/실패 여부를 종료 코드로 알립니다.
+
+4.  **크롤링 데이터 처리 및 변환 (Crawled Data Processing and Transformation):**
+    *   `Crawl4aiCrawler`는 Python 스크립트의 `stdout`에서 JSON 파일 경로를 읽거나, 스크립트가 성공적으로 종료되었는지 확인합니다.
+    *   임시 JSON 파일을 읽어와 그 내용을 파싱합니다.
+    *   파싱된 데이터를 `Page` 객체 (또는 유사한 내부 데이터 구조)의 리스트로 변환하여 `DeepResearch` 모듈에 반환합니다.
+    *   임시 JSON 파일은 작업 완료 후 삭제됩니다.
+
+5.  **AI 기반 분석 및 보고서 생성 (AI-driven Analysis and Report Generation):**
+    *   `DeepResearch` 모듈은 수집된 `Page` 객체들을 사용하여 연구를 진행합니다.
+    *   텍스트 분할(`TextSplitter`)을 통해 긴 콘텐츠를 AI 모델이 처리하기 적합한 크기로 나눌 수 있습니다. (`src/ai/text-splitter.ts`)
+    *   정의된 AI 에이전트들(예: Editor, Writer, Critic 등, `src/prompt.ts`에 정의된 프롬프트 사용)이 각자의 역할에 따라 OpenAI API (또는 설정된 다른 LLM 제공자)를 호출합니다. (`src/ai/providers.ts`)
+    *   AI 모델은 제공된 콘텐츠와 프롬프트를 기반으로 정보를 요약, 분석, 비평하고, 새로운 텍스트(보고서 초안, 답변 등)를 생성합니다.
+    *   이 과정은 연구 깊이(depth)와 너비(breadth) 설정에 따라 반복적으로 수행될 수 있습니다.
+
+6.  **출력 (Output):**
+    *   모든 AI 에이전트의 작업이 완료되면, `DeepResearch` 모듈은 최종적으로 생성된 연구 보고서(Markdown 형식)와 간결한 답변을 조합합니다.
+    *   이 최종 결과는 사용자의 CLI 콘솔에 출력됩니다.
+
+### 5.3. 주요 의존성
+
+#### 5.3.1. `deep-research` 프로젝트 (TypeScript/Node.js)
+
+*   **런타임:** Node.js (버전은 `package.json`의 `engines` 필드 참조 또는 최신 LTS 권장)
+*   **패키지 관리자:** `npm` 또는 `yarn`
+*   **주요 npm 패키지 (`package.json` 참조):**
+    *   `commander`: CLI 인자 파싱
+    *   `dotenv`: `.env` 파일에서 환경 변수 로드
+    *   `openai`: OpenAI API 연동
+    *   `ts-node`: TypeScript 직접 실행 (개발 시)
+    *   `typescript`: TypeScript 컴파일러
+    *   기타 유틸리티 및 타입 정의 라이브러리
+*   **환경 변수 (`.env.local` 파일 필수 설정):**
+    *   `OPENAI_API_KEY`: OpenAI API 사용을 위한 키
+    *   `OPENAI_MODEL_NAME`: 사용할 OpenAI 모델 (예: `gpt-4-turbo-preview`)
+    *   `CRAWLER_TYPE`: 사용할 크롤러 타입 (현재는 `"crawl4ai"`)
+    *   `PYTHON_PATH`: 로컬에 설치된 Python 실행 파일의 전체 경로 (예: `C:\\Python311\\python.exe` 또는 `/usr/bin/python3`)
+    *   `GOOGLE_SEARCH_API_KEY`: Google Custom Search API 키
+    *   `GOOGLE_SEARCH_ENGINE_ID`: Google Programmable Search Engine ID
+    *   (선택적) `MAX_TOKENS_PER_PAGE`, `CRAWLER_TIMEOUT_SECONDS`, `MAX_CONCURRENT_CRAWLERS` 등
+
+#### 5.3.2. `run_crawl4ai.py` 스크립트 (Python)
+
+*   **런타임:** Python (버전 3.8 이상 권장)
+*   **패키지 관리자:** `pip`
+*   **주요 Python 패키지 (`src/crawlers/crawl4ai/scripts/requirements.txt` 또는 직접 설치):**
+    *   `crawl4ai`: 핵심 웹 크롤링 및 콘텐츠 추출 라이브러리
+    *   `argparse`: (Python 표준 라이브러리) 명령줄 인자 파싱
+    *   `crawl4ai`가 의존하는 패키지들: `beautifulsoup4`, `requests` 또는 `httpx`, `lxml`, `readability-lxml`, `aiohttp`, `asyncio` (표준 라이브러리) 등. 이들은 `crawl4ai` 설치 시 자동으로 설치됩니다.
+
+#### 5.3.3. 외부 서비스
+
+*   **Google Cloud Platform:** Custom Search API 사용을 위한 계정 및 프로젝트 설정 필요.
+*   **OpenAI (또는 LLM 제공자):** API 사용을 위한 계정 및 API 키 필요.
+*   **인터넷 연결:** 모든 외부 API 호출 및 웹 크롤링에 필수.
+
+## 7. 전체 시스템 실행을 위한 최종 점검 사항
+
+1.  **Node.js 및 npm/yarn 설치:** Deep Research (TypeScript) 프로젝트 실행 환경.
+2.  **Python 설치:** Crawl4ai 스크립트 실행 환경.
+3.  **`.env.local` 파일 설정 완료:**
+    *   `OPENAI_API_KEY`, `OPENAI_MODEL_NAME`
+    *   `CRAWLER_TYPE="crawl4ai"`
+    *   `PYTHON_PATH` (로컬 Python 실행 파일 경로 정확히 지정)
+    *   `GOOGLE_SEARCH_API_KEY` (Google Custom Search API 키)
+    *   `GOOGLE_SEARCH_ENGINE_ID` (Google Programmable Search Engine ID)
+4.  **Deep Research 프로젝트 의존성 설치:** `npm install` 또는 `yarn install`.
+5.  **Python 가상 환경 생성 및 활성화, 의존성 설치:** `pip install -r requirements.txt` 또는 `pip install crawl4ai`.
+6.  **TypeScript 프로젝트 빌드:** `npm run build` (또는 `ts-node` 사용 시 생략 가능).
+7.  **실행:**
+    *   `npm run start -- "연구 주제"`
+    *   또는 `node dist/run.js "연구 주제" --depth X --breadth Y`
+    *   또는 `npx ts-node src/run.ts "연구 주제"`
+
+위의 모든 단계가 정상적으로 완료되면, Deep Research 시스템은 Google Custom Search API를 통해 검색하고, `run_crawl4ai.py`를 호출하여 웹 페이지를 크롤링한 후, AI 모델을 통해 분석하여 최종 보고서와 답변을 생성합니다.
+
+
+## 8. 문제 해결 및 디버깅 팁
+
+프로젝트 설정 및 실행 중 발생할 수 있는 일반적인 문제와 해결 방법입니다.
+
+### 8.1. 환경 변수 관련 오류
+
+-   **문제:** `OPENAI_API_KEY is not defined`, `GOOGLE_SEARCH_API_KEY is missing` 등 환경 변수 관련 오류 메시지 발생.
+-   **원인:** `.env.local` 파일이 없거나, 필요한 환경 변수가 누락되었거나, 잘못 설정된 경우.
+-   **해결 방법:**
+    1.  프로젝트 루트 디렉터리에 `.env.local` 파일이 있는지 확인합니다.
+    2.  `.env.local.example` 파일을 참고하여 모든 필수 환경 변수 (`OPENAI_API_KEY`, `OPENAI_MODEL_NAME`, `CRAWLER_TYPE`, `PYTHON_PATH`, `GOOGLE_SEARCH_API_KEY`, `GOOGLE_SEARCH_ENGINE_ID`)가 올바르게 설정되었는지 확인합니다.
+    3.  특히 `PYTHON_PATH`는 실제 Python 실행 파일의 정확한 전체 경로여야 합니다 (예: `C:\\Users\\YourUser\\AppData\\Local\\Programs\\Python\\Python311\\python.exe` 또는 `/usr/local/bin/python3`). 경로 구분자 `\`는 이스케이프 처리하여 `\\`로 입력해야 할 수 있습니다.
+
+### 8.2. Python 스크립트 실행 오류
+
+-   **문제:** `Error: spawn python ENOENT` 또는 Python 스크립트 관련 오류 (예: `ModuleNotFoundError: No module named 'crawl4ai'`).
+-   **원인:**
+    *   `PYTHON_PATH` 환경 변수가 잘못 설정되었거나, 해당 경로에 Python 실행 파일이 없는 경우 (`ENOENT`).
+    *   Python 가상 환경이 활성화되지 않았거나, 필요한 Python 패키지 (`crawl4ai` 등)가 설치되지 않은 경우 (`ModuleNotFoundError`).
+-   **해결 방법:**
+    1.  `.env.local` 파일의 `PYTHON_PATH`가 올바른지 다시 확인합니다.
+    2.  터미널에서 직접 `PYTHON_PATH`에 지정된 경로로 Python을 실행해보고, 버전도 확인합니다 (`python --version`).
+    3.  `run_crawl4ai.py` 스크립트가 있는 `src/crawlers/crawl4ai/scripts/` 디렉터리 또는 프로젝트 루트에서 Python 가상 환경을 생성하고 활성화했는지 확인합니다. (섹션 5.2. 가상 환경 설정 및 의존성 설치 참고)
+    4.  활성화된 가상 환경에서 `pip install -r src/crawlers/crawl4ai/scripts/requirements.txt` (또는 `pip install crawl4ai`) 명령으로 의존성이 올바르게 설치되었는지 확인합니다.
+
+### 8.3. API 키 관련 오류 (401, 403, 429 등)
+
+-   **문제:** OpenAI API 또는 Google Custom Search API 호출 시 인증 오류(401, 403) 또는 사용량 제한 오류(429) 발생.
+-   **원인:**
+    *   API 키가 잘못되었거나, 해당 API 서비스에서 계정 문제가 있는 경우 (401, 403).
+    *   단시간에 너무 많은 요청을 보내 API 사용량 제한을 초과한 경우 (429).
+-   **해결 방법:**
+    1.  `.env.local` 파일에 설정된 `OPENAI_API_KEY`, `GOOGLE_SEARCH_API_KEY`가 정확한지 확인합니다.
+    2.  각 API 제공자(Google Cloud Console, OpenAI Platform)의 대시보드에서 API 키 상태, 결제 정보, 사용량 제한 등을 확인합니다.
+    3.  429 오류의 경우, 잠시 후 다시 시도하거나, `deep-research`의 동시성 설정 (`MAX_CONCURRENT_CRAWLERS` 등) 또는 요청 빈도를 조절하는 것을 고려합니다. `Crawl4aiCrawler`에는 Google Search API에 대한 기본적인 지수 백오프 재시도 로직이 포함되어 있습니다.
+
+### 8.4. 크롤링 실패 또는 콘텐츠 누락
+
+-   **문제:** 특정 웹사이트 크롤링이 실패하거나, 결과물에 콘텐츠가 거의 없는 경우.
+-   **원인:**
+    *   대상 웹사이트가 JavaScript를 많이 사용하거나 동적으로 콘텐츠를 로드하여 `crawl4ai` (기본적으로 정적 콘텐츠 추출에 강점)가 제대로 콘텐츠를 가져오지 못하는 경우.
+    *   웹사이트에서 IP 차단, User-Agent 차단 등 크롤링 방지 기술을 사용하는 경우.
+    *   네트워크 문제 또는 타임아웃 발생.
+-   **해결 방법:**
+    1.  `run_crawl4ai.py` 실행 시 출력되는 로그나 에러 메시지를 확인합니다. (`Crawl4aiCrawler`는 Python 스크립트의 `stderr`을 로깅합니다.)
+    2.  `crawl4ai` 라이브러리 자체의 한계일 수 있습니다. 더 강력한 JavaScript 렌더링 기능이 필요하다면 Puppeteer, Playwright, Selenium 등을 사용하는 다른 크롤러 구현을 고려해야 할 수 있습니다. (현재 `deep-research`는 `crawl4ai`에 집중)
+    3.  `CRAWLER_TIMEOUT_SECONDS` 환경 변수 값을 늘려 타임아웃 가능성을 줄여볼 수 있습니다.
+
+### 8.5. 로그 확인
+
+-   **`deep-research` (Node.js) 로그:**
+    *   CLI 실행 시 콘솔에 주요 진행 상황, AI 에이전트의 입력/출력, 오류 메시지 등이 출력됩니다.
+    *   더 상세한 디버깅을 위해 코드 내에 `console.log` 문을 추가할 수 있습니다.
+-   **`run_crawl4ai.py` (Python) 로그:**
+    *   `Crawl4aiCrawler`는 Python 스크립트 실행 시 `stdout` (주로 진행률 TUI)과 `stderr` (에러 메시지)을 캡처하여 로깅합니다.
+    *   Python 스크립트 자체를 직접 실행하며 디버깅할 수도 있습니다. 예를 들어 `src/crawlers/crawl4ai/scripts/` 디렉터리에서 가상 환경을 활성화하고 다음과 같이 실행합니다:
+        ```bash
+        python run_crawl4ai.py --query "test query" --urls https://example.com --output test_output.json
+        ```
+        이렇게 하면 Python 스크립트의 모든 출력을 직접 확인할 수 있습니다.
+
+### 8.6. TypeScript 컴파일 오류
+
+-   **문제:** `npm run build` 또는 `npx ts-node src/run.ts` 실행 시 TypeScript 관련 오류 발생.
+-   **원인:** 코드의 타입 오류, 설정 오류 (`tsconfig.json`) 등.
+-   **해결 방법:**
+    1.  오류 메시지를 주의 깊게 읽고, 해당 파일 및 줄 번호의 코드를 확인하여 타입 문제를 수정합니다.
+    2.  `tsconfig.json` 파일 설정이 올바른지 확인합니다.
+    3.  `npm install` 또는 `yarn install`을 실행하여 모든 의존성이 최신 상태이고 올바르게 설치되었는지 확인합니다.
+

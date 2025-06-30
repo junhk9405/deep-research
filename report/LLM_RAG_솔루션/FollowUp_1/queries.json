@@ -1,0 +1,24 @@
+{
+  "depth": 1,
+  "maxDepth": 2,
+  "folderName": "FollowUp_1",
+  "timestamp": "2025-06-23T05:01:12.582Z",
+  "parentDimension": "Competitive Landscape & Strategic Differentiators",
+  "totalQueries": 2,
+  "queries": [
+    {
+      "index": 1,
+      "query": "LLM RAG market size growth drivers",
+      "dimension": null,
+      "researchGoal": "Analyze market size, growth rate, and demand drivers in LLM RAG solutions",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "LLM RAG competitors funding and partnerships",
+      "dimension": null,
+      "researchGoal": "Investigate funding, mergers, acquisitions, and partnership trends among LLM RAG competitors",
+      "expectedResultFile": null
+    }
+  ]
+}

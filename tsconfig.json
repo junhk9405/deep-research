@@ -4,16 +4,23 @@
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
+    "types": ["node"],
     "incremental": false,
     "isolatedModules": true,
     "lib": ["es2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
+    "module": "CommonJS",
     "moduleDetection": "force",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "node",
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2022"
-  }
+    "target": "ES2022",
+    "outDir": "./dist"
+  },
+  "exclude": [
+    "backup/**/*",
+    "node_modules/**/*",
+    "dist/**/*"
+  ]
 }

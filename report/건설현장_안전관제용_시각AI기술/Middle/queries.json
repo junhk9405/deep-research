@@ -1,0 +1,45 @@
+{
+  "depth": 3,
+  "maxDepth": 3,
+  "folderName": "Middle",
+  "timestamp": "2025-06-23T05:22:50.799Z",
+  "parentDimension": null,
+  "totalQueries": 5,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Construction site safety AI market size and trends",
+      "dimension": "Market Analysis & Demand Drivers",
+      "researchGoal": "To understand the market size, growth rate, and demand trends for AI technologies focused on construction site safety, identifying key customer pain points and adoption barriers.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Leading visual AI solutions for construction safety",
+      "dimension": "Competitive Landscape & Strategic Differentiators",
+      "researchGoal": "To identify major competitors, their product features, pricing models, and unique differentiators in the construction site safety visual AI market.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "Emerging visual AI technologies for construction safety",
+      "dimension": "Technology Trends & Feasibility Assessment",
+      "researchGoal": "To evaluate the maturity, performance, and integration challenges of current visual AI technologies applicable to construction site safety monitoring.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "Construction safety AI regulations and data privacy",
+      "dimension": "Regulatory & Risk Snapshot",
+      "researchGoal": "To analyze relevant safety regulations, data privacy laws, and cybersecurity risks impacting the deployment of visual AI in construction safety.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "ROI of visual AI in construction site safety management",
+      "dimension": "Business Impact & ROI Potential",
+      "researchGoal": "To assess the financial benefits, cost savings, payback periods, and key performance indicators related to implementing visual AI for construction safety.",
+      "expectedResultFile": null
+    }
+  ]
+}

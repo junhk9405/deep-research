@@ -1,0 +1,45 @@
+{
+  "depth": 2,
+  "maxDepth": 2,
+  "folderName": "Middle",
+  "timestamp": "2025-06-23T04:59:14.359Z",
+  "parentDimension": null,
+  "totalQueries": 5,
+  "queries": [
+    {
+      "index": 1,
+      "query": "LLM RAG solution market size and growth",
+      "dimension": "Market Analysis & Demand Drivers",
+      "researchGoal": "To understand the current market size, growth rate, and demand trends for LLM RAG solutions to identify opportunities for entry or expansion.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Leading competitors in LLM RAG solutions",
+      "dimension": "Competitive Landscape & Strategic Differentiators",
+      "researchGoal": "To identify key competitors, their product features, pricing models, and strategic differentiators in the LLM RAG solution space.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "Emerging technologies in LLM RAG solutions",
+      "dimension": "Technology Trends & Feasibility Assessment",
+      "researchGoal": "To evaluate the latest technological advancements, integration challenges, and scalability considerations for LLM RAG solutions.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "Data privacy regulations for LLM RAG solutions",
+      "dimension": "Regulatory & Risk Snapshot",
+      "researchGoal": "To assess relevant data privacy, security, and compliance requirements impacting LLM RAG solution deployment.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "ROI and business benefits of LLM RAG solutions",
+      "dimension": "Business Impact & ROI Potential",
+      "researchGoal": "To analyze the financial and operational benefits, cost structures, and ROI potential of implementing LLM RAG solutions.",
+      "expectedResultFile": null
+    }
+  ]
+}

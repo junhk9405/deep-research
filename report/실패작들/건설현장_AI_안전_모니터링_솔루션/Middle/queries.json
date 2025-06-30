@@ -1,0 +1,52 @@
+{
+  "depth": 2,
+  "maxDepth": 2,
+  "folderName": "Middle",
+  "timestamp": "2025-06-20T04:42:21.791Z",
+  "parentDimension": null,
+  "totalQueries": 6,
+  "queries": [
+    {
+      "index": 1,
+      "query": "AI construction site safety monitoring market trends",
+      "dimension": "Market Analysis & Demand Drivers",
+      "researchGoal": "To understand the market size, growth rate, and demand drivers for AI-based safety monitoring solutions in construction sites.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Leading AI safety monitoring solutions construction",
+      "dimension": "Competitive Landscape & Strategic Differentiators",
+      "researchGoal": "To identify key competitors, their technologies, and unique differentiators in AI safety monitoring for construction sites.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "ROI of AI safety monitoring in construction",
+      "dimension": "Business Impact & ROI Potential",
+      "researchGoal": "To evaluate the business value, cost savings, and return on investment potential of deploying AI safety monitoring solutions in construction environments.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "AI technology architecture for construction safety",
+      "dimension": "Technology Fit & Architectural Feasibility",
+      "researchGoal": "To assess the technical feasibility, integration challenges, and scalability of AI architectures suitable for construction site safety monitoring.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "Adoption strategies for AI safety solutions construction",
+      "dimension": "Go-to-Market Strategy",
+      "researchGoal": "To explore effective go-to-market approaches, organizational readiness, and deployment strategies for AI safety monitoring in construction.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 6,
+      "query": "Risks and mitigation in AI construction safety systems",
+      "dimension": "Risk Exposure & Mitigation Plan",
+      "researchGoal": "To identify technical, operational, and regulatory risks associated with AI safety monitoring in construction and best practices for mitigation.",
+      "expectedResultFile": null
+    }
+  ]
+}

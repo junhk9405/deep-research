@@ -1,0 +1,17 @@
+{
+  "depth": 1,
+  "maxDepth": 3,
+  "folderName": "FollowUp_2",
+  "timestamp": "2025-06-24T04:17:53.828Z",
+  "parentDimension": "Customer Segmentation & Demand Analysis",
+  "totalQueries": 1,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Construction safety AI segment personas pain points",
+      "dimension": null,
+      "researchGoal": "Identify specific pain points experienced by different personas in construction safety AI",
+      "expectedResultFile": null
+    }
+  ]
+}

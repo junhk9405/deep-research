@@ -1,0 +1,45 @@
+{
+  "depth": 3,
+  "maxDepth": 3,
+  "folderName": "Middle",
+  "timestamp": "2025-06-24T04:08:38.474Z",
+  "parentDimension": null,
+  "totalQueries": 5,
+  "queries": [
+    {
+      "index": 1,
+      "query": "Construction site safety monitoring visual AI solutions",
+      "dimension": "Solution Overview",
+      "researchGoal": "Understand the scope, functionalities, and value propositions of visual AI solutions for construction site safety monitoring, including unmet needs and competitive offerings.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 2,
+      "query": "Construction safety AI market size growth trends",
+      "dimension": "Market Landscape & Growth Dynamics",
+      "researchGoal": "Analyze the market size, growth rate, and adoption trends of AI technologies for construction site safety monitoring globally and regionally.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 3,
+      "query": "Construction safety AI customer segments demand",
+      "dimension": "Customer Segmentation & Demand Analysis",
+      "researchGoal": "Identify key customer segments, their pain points, willingness to pay, and adoption drivers for AI-based safety monitoring in construction sites.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 4,
+      "query": "Visual AI technologies for construction safety monitoring",
+      "dimension": "Technology Assessment & Business Value",
+      "researchGoal": "Evaluate core and emerging visual AI technologies applicable to construction safety, their integration complexity, scalability, and business value.",
+      "expectedResultFile": null
+    },
+    {
+      "index": 5,
+      "query": "Regulations and risks for AI in construction safety",
+      "dimension": "Risk & Regulatory Snapshot",
+      "researchGoal": "Identify regulatory requirements, data privacy concerns, cybersecurity risks, and compliance challenges related to deploying AI safety solutions in construction sites.",
+      "expectedResultFile": null
+    }
+  ]
+}
