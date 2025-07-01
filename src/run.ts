@@ -6,7 +6,6 @@ import { getModel } from './ai/providers';
 import {
   deepResearch,
   writeFinalAnswer,
-  writeFinalReport,
 } from './deep-research';
 import { generateFeedback } from './feedback';
 
@@ -85,7 +84,7 @@ ${followUpQuestions.map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`).j
 
   log('\nStarting research...\n');
 
-  const { learnings, visitedUrls } = await deepResearch({
+  const { learnings, visitedUrls, comprehensiveReport, reportPaths } = await deepResearch({
     solutionContext: solutionContext || undefined, // solutionContext가 빈 문자열이면 undefined로 전달
     query: combinedQuery,
     breadth,
@@ -99,22 +98,15 @@ ${followUpQuestions.map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`).j
   log('Writing final report...');
 
   if (isReport) {
-    const report = await writeFinalReport({
-      prompt: combinedQuery,
-      learnings,
-      visitedUrls,
-    });
-
-    // 파일명으로 사용할 수 없는 문자 제거 및 공백을 밑줄로 변경
-    const safeFileNameBase = initialQuery.replace(/[\/\?%\*:\|"<>\.]/g, '').replace(/\s+/g, '_');
-    const reportDir = path.join('report', safeFileNameBase, 'Final'); // 최종 보고서 저장 디렉토리 변경
-    await fs.mkdir(reportDir, { recursive: true }); // report/<검색어>/Final 디렉토리가 없으면 생성
-    const reportFileName = `${safeFileNameBase}_report.md`; // 파일명은 기존 방식 유지
-    const reportFilePath = path.join(reportDir, reportFileName);
-
-    await fs.writeFile(reportFilePath, report, 'utf-8');
-    console.log(`\n\nFinal Report:\n\n${report}`);
-    console.log(`\nReport has been saved to ${reportFilePath}`);
+    const safeFileNameBase = initialQuery.replace(/[\/\?%\*:|<>".]/g, '').replace(/\s+/g, '_');
+    if (comprehensiveReport) {
+      console.log(`\n\n✅ Comprehensive Report Generated!`);
+      console.log(`📁 Reports saved to: ${reportPaths?.join(', ')}`);
+      console.log(`\n\n💡 Strategic Summary:\n\n${comprehensiveReport.substring(0, 1000)}...`);
+    } else {
+      console.log(`\n\n⚠️ Note: Comprehensive report generation was skipped or failed.`);
+      console.log(`📚 Research data saved in: report/${safeFileNameBase}/`);
+    }
   } else {
     const answer = await writeFinalAnswer({
       prompt: combinedQuery,

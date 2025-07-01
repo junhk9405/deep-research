@@ -6,6 +6,7 @@ import pLimit from 'p-limit';
 import { z } from 'zod';
 import * as path from 'path';
 import * as fs from 'node:fs/promises';
+import { generateComprehensiveReport } from './comprehensive-report-generator';
 
 import { getModel, getQueryModel, getResearchModel, getReportModel, getAnswerModel, trimPrompt } from './ai/providers';
 import { systemPrompt } from './prompt'; // systemPrompt import
@@ -104,6 +105,8 @@ export type ResearchProgress = {
 export type ResearchResult = {
   learnings: string[];
   visitedUrls: string[];
+  comprehensiveReport?: string; // 새로 추가
+  reportPaths?: string[]; // 새로 추가
 };
 
 // increase this if you have higher API rate limits
@@ -455,91 +458,6 @@ ${trimmedContent}
   };
 }
 
-export async function writeFinalReport({
-  prompt,
-  learnings,
-  visitedUrls,
-}: {
-  prompt: string;
-  learnings: string[];
-  visitedUrls: string[];
-}) {
-  const learningsString = learnings
-    .map(learning => `<learning>\n${learning}\n</learning>`)
-    .join('\n');
-
-  const res = await generateObject({
-    model: getReportModel(),
-    system: systemPrompt(),
-    prompt: trimPrompt(
-      `이전 검색에서 얻은 모든 조사 내용을 바탕으로, 주제에 대한 심층 기술 전략 보고서를 한국어로 작성하십시오. 
-       검색 내용에는 불필요한 내용 혹은 주제와 무관한 내용도 있을 수 있지만, 필요한 정보를 잘 취사선택하는 것도 당신의 능력입니다.
-
-      You are an AI Research Agent assigned to prepare an in-depth, structured report to support high-level business decision-making for a specific IT solution.
-
-      The report must be comprehensive, evidence-based, and reflect all relevant research findings. It should include a minimum of 15 pages of detailed content, organized under the following sections:
-
-      ---
-
-      ### Report Structure & Section Goals
-
-      1. **Executive Summary & Strategic Rationale**  
-        - One-sentence mission & “why now” argument  
-        - Three key take-aways / decisions
-
-      2. **Market & Competitive Insights**  
-        - Market size & CAGR   
-        - Demand drivers / blockers & customer pain points  
-        - 3 leading competitors & white-space  
-
-      3. **Technology Assessment & Fit-Gap**  
-        - Two or three pivotal tech trends 
-        - Capabilities-vs-requirements  (build / buy / partner)  
-        - Integration feasibility & scalability constraints  
-
-      4. **Business Value & ROI Outlook**  
-        - Cost-saving & revenue-uplift levers 
-        - High-level financial model: base vs. stretch scenario  
-        - Payback period & two to three headline KPIs  
-
-      5. **High-Level Roadmap (12–36 months)**  
-        - Phase 0: PoC goal & success metric  
-        - Phase 1: MVP launch (quarter, budget, team size)  
-        - Phase 2: Scale & optimize (optional)  
-
-      6. **Risks & Governance**  
-        - Top five risks (tech / market / compliance) with mitigations  
-        - Ownership (RACI) snapshot & monthly KPI review cadence  
-
-      ---
-      Strictly follow these writing guidelines for every section:
-      - Use Markdown headings for each main section
-      - Each Sub-sections should include at least 2–3 full paragraphs.
-      - Each section should contain at least 4–5 detailed paragraphs.
-      - Important!: Every paragraph must adopt a **Claim** → **Multiple Evidences** flow
-      - In the Evidences part, **provide as many distinct data points, studies, expert quotes, or case examples as are credibly available (3개 이상이 바람직)**, weaving them into a persuasive narrative rather than a mere list.
-      - Each paragraph must have written in well-formed, narrative sentences.
-      - Provide concrete explanations and deep analysis, not surface-level summaries.
-      - Include quantitative data, statistics, industry examples, and use structured elements like tables and bullet lists where appropriate
-            - In the Roadmap section, develop clear short-/mid-/long-term execution plans (not just listing facts)
-            - The combined word count of tables/figures must NOT exceed 30% of the section.
-
-      All information must be synthesized into original insight—not copied or paraphrased. Avoid bullet-style or brief summaries as the main format. Every section must contain rich explanation and thoughtful discussion.
-      **Please write your response in Korean.**
-
-      Here is the result of All learnings. <learnings>\n${learningsString}\n</learnings>
-      `,
-    ),
-    schema: z.object({
-      reportMarkdown: z.string().describe('Comprehensive, detailed strategic report on the topic in Markdown format with extensive analysis and insights'),
-    }),
-  });
-
-  // Append the visited URLs section to the report
-  const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
-  return res.object.reportMarkdown + urlsSection;
-}
-
 export async function writeFinalAnswer({
   prompt,
   learnings,
@@ -547,23 +465,24 @@ export async function writeFinalAnswer({
   prompt: string;
   learnings: string[];
 }) {
+  const model = getAnswerModel();
+
   const learningsString = learnings
     .map(learning => `<learning>\n${learning}\n</learning>`)
     .join('\n');
 
-  const res = await generateObject({
-    model: getAnswerModel(),
+  const { object: answer } = await generateObject({
+    model,
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Given the following prompt from the user, write a final answer on the topic using the learnings from research. Follow the format specified in the prompt. Do not yap or babble or include any other text than the answer besides the format specified in the prompt. Keep the answer as concise as possible - usually it should be just a few words or maximum a sentence. Try to follow the format specified in the prompt (for example, if the prompt is using Latex, the answer should be in Latex. If the prompt gives multiple answer choices, the answer should be one of the choices).\n\n<prompt>${prompt}</prompt>\n\nHere are all the learnings from research on the topic that you can use to help answer the prompt:\n\n<learnings>\n${learningsString}\n</learnings>`,
+      `Please write a comprehensive, easy-to-read, and in-depth answer to the following question. The answer should be written in Korean and in markdown format. The answer should be based on the following learnings. You can also use your own knowledge to supplement the answer.\n\nQuestion: ${prompt}\n\nLearnings:\n${learningsString}`,
     ),
     schema: z.object({
-      exactAnswer: z
-        .string()
-        .describe('The final answer, make it short and concise, just the answer, no other text'),
+      answer: z.string(),
     }),
   });
-  return res.object.exactAnswer;
+
+  return answer.answer;
 }
 
 export async function deepResearch({
@@ -837,8 +756,37 @@ export async function deepResearch({
     ),
   );
 
-  return {
+  const finalResult: ResearchResult = {
     learnings: [...new Set(results.flatMap(r => r.learnings))],
     visitedUrls: [...new Set(results.flatMap(r => r.visitedUrls))],
   };
+
+  // 🆕 최초 깊이에서만 comprehensive report 생성
+  if (depth === (originalDepth || depth)) {
+    try {
+      console.log('🎯 Generating comprehensive report...');
+      const safeInitialQuery = (initialQuery || query).replace(/[\/\?%\*:\|"<>\.]/g, '').replace(/\s+/g, '_');
+
+      const comprehensiveResult = await generateComprehensiveReport({
+        prompt: initialQuery || query,
+        learnings: finalResult.learnings,
+        visitedUrls: finalResult.visitedUrls,
+        options: {
+          includeDimensionReports: true,
+          includeConsolidatedReport: true,
+          includeStrategicReport: true,
+          outputDirectory: path.join('report', safeInitialQuery)
+        }
+      });
+
+      finalResult.comprehensiveReport = comprehensiveResult.strategicReport || comprehensiveResult.consolidatedReport;
+      finalResult.reportPaths = comprehensiveResult.reportPaths;
+
+    } catch (error) {
+      console.error('⚠️ Comprehensive report generation failed:', error);
+      // 실패해도 기본 결과는 반환
+    }
+  }
+
+  return finalResult;
 }

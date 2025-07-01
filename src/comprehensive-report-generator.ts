@@ -546,7 +546,7 @@ ${allContent}
     }),
   });
   
-  return res.report; //return res.object.strategicReport;
+  return res.report;
 }
 
 /**
