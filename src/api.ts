@@ -1,16 +1,12 @@
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
-
-// 디버깅용 (임시)
-console.log('🔑 OPENAI_KEY loaded:', !!process.env.OPENAI_KEY);
-console.log('🔑 OPENAI_KEY first 10 chars:', process.env.OPENAI_KEY?.substring(0, 10));
+// src/api.ts
+// ✅ providers.ts에서 이미 dotenv 로딩하므로 여기서는 제거
 
 import cors from 'cors';
 import express, { Request, Response } from 'express';
-
-import { deepResearch } from './deep-research';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// 동적 import로 변경된 deepResearch
 import { writeComprehensiveReport } from './comprehensive-report-generator';
 
 const app = express();
@@ -25,7 +21,6 @@ function log(...args: any[]) {
   console.log(...args);
 }
 
-// 새로생긴부분
 // 연구 세션 관리를 위한 인터페이스
 interface ResearchSession {
   status: 'running' | 'completed' | 'error';
@@ -42,7 +37,7 @@ interface ResearchSession {
   startTime: number;
 }
 
-// 진행중인 연구 세션들을 메모리에 저장 (간단한 MVP용)
+// 진행중인 연구 세션들을 메모리에 저장
 const sessions = new Map<string, ResearchSession>();
 
 // API endpoint to run research
@@ -56,6 +51,9 @@ app.post('/api/research', async (req: Request, res: Response) => {
 
     log('\nStarting research...\n');
 
+    // 동적 import 사용
+    const { deepResearch } = await import('./deep-research');
+    
     const { learnings, visitedUrls } = await deepResearch({
       query,
       breadth,
@@ -67,8 +65,6 @@ app.post('/api/research', async (req: Request, res: Response) => {
       `\n\nVisited URLs (${visitedUrls.length}):\n\n${visitedUrls.join('\n')}`,
     );
 
-
-    // Return the results
     return res.json({
       success: true,
       learnings,
@@ -84,40 +80,46 @@ app.post('/api/research', async (req: Request, res: Response) => {
 });
 
 // generate report API
-app.post('/api/generate-report',async(req:Request,res:Response)=>{
-  try{
-    const {query,depth = 3,breadth=3 } = req.body;
-    if(!query){
-      return res.status(400).json({error:'Query is required'});
+app.post('/api/generate-report', async (req: Request, res: Response) => {
+  try {
+    const { query, depth = 3, breadth = 3 } = req.body;
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
     }
-    log('\n Starting research...\n')
-    const {learnings,visitedUrls} = await deepResearch({
+    
+    log('\n Starting research...\n');
+    
+    // 동적 import 사용
+    const { deepResearch } = await import('./deep-research');
+    
+    const { learnings, visitedUrls } = await deepResearch({
       query,
       breadth,
       depth
     });
+    
     log(`\n\nLearnings:\n\n${learnings.join('\n')}`);
     log(
       `\n\nVisited URLs (${visitedUrls.length}):\n\n${visitedUrls.join('\n')}`,
     );
+    
     const report = await writeComprehensiveReport({
-      prompt:query,
+      prompt: query,
       learnings,
       visitedUrls
     });
 
-    return report
+    return res.json({ report });
     
-  }catch(error:unknown){
-    console.error("Error in generate report API:",error)
+  } catch (error: unknown) {
+    console.error("Error in generate report API:", error);
     return res.status(500).json({
-      error:'An error occurred during research',
-      message:error instanceof Error? error.message: String(error),
-    })
+      error: 'An error occurred during research',
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
-})
+});
 
-//여기에 3번째 클로드 코드 추가
 // 1. 연구 시작 API 엔드포인트
 app.post('/api/research/start', async (req: Request, res: Response) => {
   try {
@@ -180,6 +182,7 @@ app.post('/api/research/start', async (req: Request, res: Response) => {
     });
   }
 });
+
 // 2. 연구 진행상황 조회 API 엔드포인트
 app.get('/api/research/status/:sessionId', (req: Request, res: Response) => {
   try {
@@ -198,14 +201,13 @@ app.get('/api/research/status/:sessionId', (req: Request, res: Response) => {
       });
     }
 
-    // 세션 정보 반환 (민감한 정보 제외)
     const response = {
       sessionId,
       status: session.status,
       progress: session.progress,
       error: session.error,
       reportPaths: session.reportPaths?.map(path => ({
-        filename: path.split(/[/\\]/).pop(), // 파일명만 추출
+        filename: path.split(/[/\\]/).pop(),
         fullPath: path
       })),
       elapsedTime: Date.now() - session.startTime
@@ -252,7 +254,6 @@ app.get('/api/research/download/:sessionId/:filename', (req: Request, res: Respo
       });
     }
 
-    // 요청된 파일 찾기 (보안을 위해 정확한 매칭)
     const requestedFile = session.reportPaths.find(filePath => {
       const actualFilename = path.basename(filePath);
       return actualFilename === filename;
@@ -265,7 +266,6 @@ app.get('/api/research/download/:sessionId/:filename', (req: Request, res: Respo
       });
     }
 
-    // 파일 존재 확인
     if (!fs.existsSync(requestedFile)) {
       return res.status(404).json({ 
         error: 'File not found on disk' 
@@ -274,7 +274,6 @@ app.get('/api/research/download/:sessionId/:filename', (req: Request, res: Respo
 
     console.log(`📥 Downloading file: ${filename} for session: ${sessionId}`);
 
-    // 파일 다운로드
     res.download(requestedFile, filename, (err) => {
       if (err) {
         console.error('❌ Download error:', err);
@@ -296,12 +295,11 @@ app.get('/api/research/download/:sessionId/:filename', (req: Request, res: Respo
   }
 });
 
-// 4. 세션 취소 API (선택사항)
+// 4. 세션 취소 API
 app.delete('/api/research/cancel/:sessionId', (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     
-    // 타입 체크 추가
     if (!sessionId) {
       return res.status(400).json({ error: 'Session ID is required' });
     }
@@ -338,6 +336,9 @@ async function runResearchInBackground(
   try {
     console.log(`🔬 Starting deep research for session: ${sessionId}`);
     
+    // 동적 import 사용
+    const { deepResearch } = await import('./deep-research');
+    
     const result = await deepResearch({
       query,
       depth: options.depth,
@@ -346,7 +347,6 @@ async function runResearchInBackground(
       initialQuery: query,
       originalDepth: options.depth,
       onProgress: (progress) => {
-        // 진행상황 업데이트
         const updatedSession = sessions.get(sessionId);
         if (updatedSession && updatedSession.status === 'running') {
           updatedSession.progress = progress;
@@ -357,7 +357,6 @@ async function runResearchInBackground(
       }
     });
 
-    // 성공적으로 완료
     const updatedSession = sessions.get(sessionId);
     if (updatedSession) {
       updatedSession.status = 'completed';
@@ -381,10 +380,10 @@ async function runResearchInBackground(
   }
 }
 
-// 세션 정리 함수 (24시간 후 자동 삭제)
+// 세션 정리 함수
 function cleanupOldSessions() {
   const now = Date.now();
-  const maxAge = 24 * 60 * 60 * 1000; // 24시간
+  const maxAge = 24 * 60 * 60 * 1000;
   let cleanedCount = 0;
 
   for (const [sessionId, session] of sessions.entries()) {
@@ -400,10 +399,9 @@ function cleanupOldSessions() {
   }
 }
 
-// 1시간마다 세션 정리 실행
 setInterval(cleanupOldSessions, 60 * 60 * 1000);
 
-// Start the server
+// 서버 시작
 app.listen(port, () => {
   console.log(`🚀 Deep Research API server running on port ${port}`);
   console.log(`📊 Session management: In-memory storage (24h TTL)`);

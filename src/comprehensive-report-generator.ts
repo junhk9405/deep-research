@@ -58,7 +58,7 @@ IT솔루션션 분석 전문 컨설턴트로서, 솔루션 설명 리포트 파�
 1.1 Solution Definition & Scope
 1.2 KR Scope & Market Fit
 1.3 Unmet Needs & Value Proposition
-(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 그 외 인사이트
+ + 그 외 인사이트(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 
 
 `,
 
@@ -77,7 +77,7 @@ IT솔루션션 분석 전문 컨설턴트로서, 솔루션 설명 리포트 파�
 2.2 Market Size & CAGR (Korea)
 2.3 Value Drivers & Adoption Barriers
 2.4 Funding & M&A Trends
-(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 그 외 인사이트
+ + 그 외 인사이트(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 
 
 `,
 
@@ -95,7 +95,7 @@ IT솔루션션 분석 전문 컨설턴트로서, 솔루션 설명 리포트 파�
 3.1 Segment Taxonomy & Personas
 3.2 Pain-point Severity (Cost·Freq.)
 3.3 Demand & Willingness-to-Pay
-(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 그 외 인사이트
+ + 그 외 인사이트(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 
 
 `,
 
@@ -113,7 +113,7 @@ IT솔루션션 분석 전문 컨설턴트로서, 솔루션 설명 리포트 파�
 4.1 Core vs. Emerging Technologies
 4.2 Implementation Complexity Benchmarks
 4.3 Business Value by Technology (ROI)
-(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 그 외 인사이트
+ + 그 외 인사이트(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 
 `,
 
   'Risk & Regulatory Snapshot': `
@@ -130,7 +130,7 @@ IT솔루션션 분석 전문 컨설턴트로서, 솔루션 설명 리포트 파�
 5.1 Regulatory & Compliance Risks
 5.2 Tech / Market Entry Barriers
 5.3 Mitigation Strategies & Timeline
-(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 그 외 인사이트
+ + 그 외 인사이트(정말 중요한 이슈인 경우에만 작성, 아니면 작성 X) 
 `
 };
 

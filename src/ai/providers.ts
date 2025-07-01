@@ -1,3 +1,8 @@
+// src/ai/providers.ts
+// ✅ 1. 가장 먼저 환경 변수 로딩
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import { createFireworks } from '@ai-sdk/fireworks';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -10,43 +15,57 @@ import { getEncoding } from 'js-tiktoken';
 
 import { RecursiveCharacterTextSplitter } from './text-splitter';
 
+// 환경 변수명 통일 및 fallback 추가
+const OPENAI_API_KEY = process.env.OPENAI_KEY || process.env.OPENAI_API_KEY;
+const FIREWORKS_API_KEY = process.env.FIREWORKS_KEY || process.env.FIREWORKS_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
+
+console.log('🔑 API Keys status:');
+console.log('  OPENAI:', !!OPENAI_API_KEY, OPENAI_API_KEY?.substring(0, 10) + '...');
+console.log('  FIREWORKS:', !!FIREWORKS_API_KEY);
+console.log('  ANTHROPIC:', !!ANTHROPIC_API_KEY);
+
 // Providers
-const openai = process.env.OPENAI_KEY
+const openai = OPENAI_API_KEY
   ? createOpenAI({
-      apiKey: process.env.OPENAI_KEY,
+      apiKey: OPENAI_API_KEY,
       baseURL: process.env.OPENAI_ENDPOINT || 'https://api.openai.com/v1',
     })
   : undefined;
 
-const fireworks = process.env.FIREWORKS_KEY
+const fireworks = FIREWORKS_API_KEY
   ? createFireworks({
-      apiKey: process.env.FIREWORKS_KEY,
+      apiKey: FIREWORKS_API_KEY,
     })
   : undefined;
 
-const customModel = process.env.CUSTOM_MODEL
-  ? openai?.(process.env.CUSTOM_MODEL, {
+const anthropic = ANTHROPIC_API_KEY
+  ? createAnthropic({
+      apiKey: ANTHROPIC_API_KEY,
+    })
+  : undefined;
+
+const customModel = process.env.CUSTOM_MODEL && openai
+  ? openai(process.env.CUSTOM_MODEL, {
       structuredOutputs: true,
     })
   : undefined;
 
-  const anthropic = process.env.ANTHROPIC_KEY
-  ? createAnthropic({
-      apiKey: process.env.ANTHROPIC_KEY,
-    })
-  : undefined;
-
-
-// Models
-
-const claudeSonnet4Model = anthropic?.('claude-sonnet-4-20250514', {
-  // Claude 설정
-});
-
+// Models with better fallback
+const claudeSonnet4Model = anthropic?.('claude-sonnet-4-20250514');
 
 const o3MiniModel = openai?.('o3-2025-04-16', {
   structuredOutputs: true,
-})
+});
+
+// 기본 GPT 모델들 추가 (더 안정적)
+const gpt4Model = openai?.('gpt-4o-mini', {
+  structuredOutputs: true,
+});
+
+const gpt35Model = openai?.('gpt-3.5-turbo', {
+  structuredOutputs: true,
+});
 
 const deepSeekR1Model = fireworks
   ? wrapLanguageModel({
@@ -58,81 +77,108 @@ const deepSeekR1Model = fireworks
   : undefined;
 
 export function getModel(): LanguageModelV1 {
+  console.log('🎯 getModel() called');
+  
   if (customModel) {
+    console.log('✅ Using custom model:', process.env.CUSTOM_MODEL);
     return customModel;
   }
 
-  const model = deepSeekR1Model ?? o3MiniModel;
-  if (!model) {
-    throw new Error('No model found');
+  // 사용 가능한 모델 우선순위 체크
+  const models = [
+    { model: deepSeekR1Model, name: 'DeepSeek R1' },
+    { model: o3MiniModel, name: 'O3 Mini' },
+    { model: claudeSonnet4Model, name: 'Claude Sonnet 4' },
+    { model: gpt4Model, name: 'GPT-4o Mini' },
+    { model: gpt35Model, name: 'GPT-3.5 Turbo' }
+  ];
+
+  for (const { model, name } of models) {
+    if (model) {
+      console.log(`✅ Using model: ${name}`);
+      return model as LanguageModelV1;
+    }
   }
 
-  return model as LanguageModelV1;
+  // 모든 모델이 실패한 경우 더 상세한 오류 메시지
+  const errorDetails = {
+    openaiKey: !!OPENAI_API_KEY,
+    fireworksKey: !!FIREWORKS_API_KEY,
+    anthropicKey: !!ANTHROPIC_API_KEY,
+    openaiProvider: !!openai,
+    fireworksProvider: !!fireworks,
+    anthropicProvider: !!anthropic
+  };
+  
+  console.error('❌ No model available. Details:', errorDetails);
+  throw new Error(`No model found. Please check your API keys. Status: ${JSON.stringify(errorDetails)}`);
 }
 
-// 함수별 모델 선택 함수들
 export function getModelSafely(preferredModel: string): LanguageModelV1 {
+  console.log(`🎯 getModelSafely() called with: ${preferredModel}`);
+  
   try {
-    // Claude 모델 처리 추가
+    // Claude 모델 처리
     if (preferredModel.startsWith('claude-')) {
       if (!anthropic) {
         console.warn('Anthropic provider not available, falling back to default');
         return getModel();
       }
-      return anthropic(preferredModel) as LanguageModelV1; // 👈 타입 캐스팅 추가
+      console.log(`✅ Using Claude model: ${preferredModel}`);
+      return anthropic(preferredModel) as LanguageModelV1;
     }
     
-    // 기존 OpenAI 로직
+    // OpenAI 모델 처리
     if (!openai) {
       console.warn('OpenAI provider not available, falling back to default');
       return getModel();
     }
+    
+    console.log(`✅ Using OpenAI model: ${preferredModel}`);
     return openai(preferredModel, { structuredOutputs: true });
+    
   } catch (error) {
     console.warn(`Failed to load ${preferredModel}, falling back to default:`, error);
     return getModel();
   }
 }
-//   try {
-//     if (!openai) {
-//       console.warn('OpenAI provider not available, falling back to default');
-//       return getModel();
-//     }
-//     return openai(preferredModel, { structuredOutputs: true });
-//   } catch (error) {
-//     console.warn(`Failed to load ${preferredModel}, falling back to default:`, error);
-//     return getModel();
-//   }
-// }
 
+// 모델별 함수들 - 더 안전한 fallback 적용
 export function getQueryModel(): LanguageModelV1 {
-  const queryModelName = process.env.QUERY_MODEL || 'gpt-4.1-mini-2025-04-14';
+  const queryModelName = process.env.QUERY_MODEL || 'gpt-4o-mini';
+  console.log(`🎯 getQueryModel() using: ${queryModelName}`);
   return getModelSafely(queryModelName);
 }
 
 export function getResearchModel(): LanguageModelV1 {
-  const researchModelName = process.env.RESEARCH_MODEL || 'gpt-4.1-mini-2025-04-14';
+  const researchModelName = process.env.RESEARCH_MODEL || 'gpt-4o-mini';
+  console.log(`🎯 getResearchModel() using: ${researchModelName}`);
   return getModelSafely(researchModelName);
 }
 
 export function getReportModel(): LanguageModelV1 {
-  // 최종 보고서용은 항상 o3 모델 사용
-  const reportModelName = process.env.REPORT_MODEL || 'o3-2025-04-16';
+  const reportModelName = process.env.REPORT_MODEL || 'gpt-4o-mini';
+  console.log(`🎯 getReportModel() using: ${reportModelName}`);
+  
+  // O3 모델 우선 시도
   if (reportModelName === 'o3-2025-04-16' && o3MiniModel) {
+    console.log('✅ Using O3 Mini for reports');
     return o3MiniModel;
   }
+  
   return getModelSafely(reportModelName);
 }
 
 export function getAnswerModel(): LanguageModelV1 {
-  const answerModelName = process.env.ANSWER_MODEL || 'gpt-4.1-mini-2025-04-14';
+  const answerModelName = process.env.ANSWER_MODEL || 'gpt-4o-mini';
+  console.log(`🎯 getAnswerModel() using: ${answerModelName}`);
   return getModelSafely(answerModelName);
 }
 
+// 나머지 함수들
 const MinChunkSize = 140;
 const encoder = getEncoding('o200k_base');
 
-// trim prompt to maximum context size
 export function trimPrompt(
   prompt: string,
   contextSize = Number(process.env.CONTEXT_SIZE) || 128_000,
@@ -147,7 +193,6 @@ export function trimPrompt(
   }
 
   const overflowTokens = length - contextSize;
-  // on average it's 3 characters per token, so multiply by 3 to get a rough estimate of the number of characters
   const chunkSize = prompt.length - overflowTokens * 3;
   if (chunkSize < MinChunkSize) {
     return prompt.slice(0, MinChunkSize);
@@ -159,17 +204,13 @@ export function trimPrompt(
   });
   const trimmedPrompt = splitter.splitText(prompt)[0] ?? '';
 
-  // last catch, there's a chance that the trimmed prompt is same length as the original prompt, due to how tokens are split & innerworkings of the splitter, handle this case by just doing a hard cut
   if (trimmedPrompt.length === prompt.length) {
     return trimPrompt(prompt.slice(0, chunkSize), contextSize);
   }
 
-  // recursively trim until the prompt is within the context size
   return trimPrompt(trimmedPrompt, contextSize);
 }
 
-
-// src/ai/providers.ts 맨 아래 추가
 export async function generateObjectSafely({
   model,
   system,
@@ -189,7 +230,6 @@ export async function generateObjectSafely({
   const isClaudeModel = model.modelId.includes('claude');
   
   if (isClaudeModel) {
-    // Claude: generateText 사용
     const { generateText } = await import('ai');
     const result = await generateText({
       model,
@@ -202,7 +242,6 @@ export async function generateObjectSafely({
     return { report: result.text };
     
   } else {
-    // OpenAI: generateObject 사용
     const { generateObject } = await import('ai');
     const result = await generateObject({
       model,
