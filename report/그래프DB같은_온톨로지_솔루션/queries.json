@@ -1,0 +1,205 @@
+{
+  "projectInfo": {
+    "projectName": "그래프DB같은_온톨로지_솔루션",
+    "startTime": "2025-06-30T08:48:31.959Z",
+    "totalDepth": 2
+  },
+  "searchHistory": {
+    "1차검색": {
+      "depth": 2,
+      "folderName": "Middle",
+      "timestamp": "2025-06-30T08:48:31.959Z",
+      "parentDimension": null,
+      "totalQueries": 5,
+      "queries": [
+        {
+          "index": 1,
+          "query": "Ontology solutions and graph DB features",
+          "dimension": "Solution Overview",
+          "researchGoal": "To understand the scope, key functions, and value propositions of ontology solutions like graph databases.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 2,
+          "query": "Ontology solution market size and trends",
+          "dimension": "Market Landscape & Growth Dynamics",
+          "researchGoal": "To explore the market size, growth rates, and adoption trends of ontology and graph database solutions globally and regionally.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 3,
+          "query": "Ontology solution user segments and needs",
+          "dimension": "Customer Segmentation & Demand Analysis",
+          "researchGoal": "To identify key customer segments, their pain points, and demand drivers for ontology and graph database solutions.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 4,
+          "query": "Ontology technology options and business impact",
+          "dimension": "Technology Assessment & Business Value",
+          "researchGoal": "To assess core and emerging ontology technologies, integration complexity, scalability, and their business value.",
+          "expectedResultFile": null
+        },
+        {
+          "index": 5,
+          "query": "Ontology solutions risks and compliance issues",
+          "dimension": "Risk & Regulatory Snapshot",
+          "researchGoal": "To analyze risks, regulatory challenges, and compliance requirements related to ontology and graph database solutions.",
+          "expectedResultFile": null
+        }
+      ]
+    },
+    "2차검색": {
+      "MarketLandscapeGrowthDynamics": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-30T08:48:46.011Z",
+        "parentDimension": "Market Landscape & Growth Dynamics",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Ontology solution definition and scope overview",
+            "dimension": null,
+            "researchGoal": "Understand what ontology solutions encompass and their functional scope",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Investment and funding trends in ontology solutions",
+            "dimension": null,
+            "researchGoal": "Explore recent investment, funding, and M&A activities in the ontology solution market",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Customer segmentation in ontology solution market",
+            "dimension": null,
+            "researchGoal": "Analyze customer segments by industry, size, and geography for ontology solutions",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "CustomerSegmentationDemandAnalysis": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-30T08:49:05.503Z",
+        "parentDimension": "Customer Segmentation & Demand Analysis",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Ontology solution definition and scope",
+            "dimension": null,
+            "researchGoal": "Understand what ontology solutions encompass and their functionalities within customer segmentation and demand analysis.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Business value drivers in ontology adoption",
+            "dimension": null,
+            "researchGoal": "Identify key factors driving or inhibiting business adoption of ontology solutions in various customer segments.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Customer pain points in ontology solutions",
+            "dimension": null,
+            "researchGoal": "Explore the main challenges and unmet needs faced by different customer segments using ontology solutions.",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "SolutionOverview": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-30T08:49:16.033Z",
+        "parentDimension": "Solution Overview",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Ontology solutions definition and scope",
+            "dimension": null,
+            "researchGoal": "Explore what ontology solutions do and their scope within graph databases.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Ontology solutions Korean market competitive snapshot",
+            "dimension": null,
+            "researchGoal": "Identify Korean-language findings and competitive landscape for ontology solutions.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Unmet needs and value of ontology solutions",
+            "dimension": null,
+            "researchGoal": "Investigate evidence of unmet needs and high-level value propositions of ontology solutions.",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "TechnologyAssessmentBusinessValue": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-30T08:49:31.271Z",
+        "parentDimension": "Technology Assessment & Business Value",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Core and emerging ontology technologies use cases",
+            "dimension": null,
+            "researchGoal": "Explore key technologies and practical applications in ontology relevant to business value.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Ontology implementation complexity benchmarks",
+            "dimension": null,
+            "researchGoal": "Assess complexity factors like latency, cost, and team size for ontology solutions.",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Business value of ontology technologies ROI",
+            "dimension": null,
+            "researchGoal": "Investigate return on investment and cost savings from ontology technology adoption.",
+            "expectedResultFile": null
+          }
+        ]
+      },
+      "RiskRegulatorySnapshot": {
+        "depth": 1,
+        "folderName": "FollowUp_1",
+        "timestamp": "2025-06-30T08:49:45.123Z",
+        "parentDimension": "Risk & Regulatory Snapshot",
+        "totalQueries": 3,
+        "queries": [
+          {
+            "index": 1,
+            "query": "Ontology solution definition and scope risks",
+            "dimension": null,
+            "researchGoal": "Explore risks related to the definition and scope of ontology solutions in compliance",
+            "expectedResultFile": null
+          },
+          {
+            "index": 2,
+            "query": "Regulatory and compliance risks in ontology market",
+            "dimension": null,
+            "researchGoal": "Investigate regulatory and compliance risks affecting ontology solution market entry and competition",
+            "expectedResultFile": null
+          },
+          {
+            "index": 3,
+            "query": "Ontology compliance challenges by customer segment",
+            "dimension": null,
+            "researchGoal": "Analyze compliance challenges and risk factors across different customer segments using ontology solutions",
+            "expectedResultFile": null
+          }
+        ]
+      }
+    }
+  }
+}

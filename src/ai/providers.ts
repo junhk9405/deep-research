@@ -1,5 +1,6 @@
 import { createFireworks } from '@ai-sdk/fireworks';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import {
   extractReasoningMiddleware,
   LanguageModelV1,
@@ -29,7 +30,19 @@ const customModel = process.env.CUSTOM_MODEL
     })
   : undefined;
 
+  const anthropic = process.env.ANTHROPIC_KEY
+  ? createAnthropic({
+      apiKey: process.env.ANTHROPIC_KEY,
+    })
+  : undefined;
+
+
 // Models
+
+const claudeSonnet4Model = anthropic?.('claude-sonnet-4-20250514', {
+  // Claude 설정
+});
+
 
 const o3MiniModel = openai?.('o3-2025-04-16', {
   structuredOutputs: true,
@@ -60,6 +73,16 @@ export function getModel(): LanguageModelV1 {
 // 함수별 모델 선택 함수들
 export function getModelSafely(preferredModel: string): LanguageModelV1 {
   try {
+    // Claude 모델 처리 추가
+    if (preferredModel.startsWith('claude-')) {
+      if (!anthropic) {
+        console.warn('Anthropic provider not available, falling back to default');
+        return getModel();
+      }
+      return anthropic(preferredModel) as LanguageModelV1; // 👈 타입 캐스팅 추가
+    }
+    
+    // 기존 OpenAI 로직
     if (!openai) {
       console.warn('OpenAI provider not available, falling back to default');
       return getModel();
@@ -70,6 +93,17 @@ export function getModelSafely(preferredModel: string): LanguageModelV1 {
     return getModel();
   }
 }
+//   try {
+//     if (!openai) {
+//       console.warn('OpenAI provider not available, falling back to default');
+//       return getModel();
+//     }
+//     return openai(preferredModel, { structuredOutputs: true });
+//   } catch (error) {
+//     console.warn(`Failed to load ${preferredModel}, falling back to default:`, error);
+//     return getModel();
+//   }
+// }
 
 export function getQueryModel(): LanguageModelV1 {
   const queryModelName = process.env.QUERY_MODEL || 'gpt-4.1-mini-2025-04-14';
@@ -132,4 +166,52 @@ export function trimPrompt(
 
   // recursively trim until the prompt is within the context size
   return trimPrompt(trimmedPrompt, contextSize);
+}
+
+
+// src/ai/providers.ts 맨 아래 추가
+export async function generateObjectSafely({
+  model,
+  system,
+  prompt,
+  schema,
+  maxTokens,
+  temperature
+}: {
+  model: LanguageModelV1;
+  system: string;
+  prompt: string;
+  schema: any;
+  maxTokens?: number;
+  temperature?: number;
+}): Promise<{ report: string }> {
+  
+  const isClaudeModel = model.modelId.includes('claude');
+  
+  if (isClaudeModel) {
+    // Claude: generateText 사용
+    const { generateText } = await import('ai');
+    const result = await generateText({
+      model,
+      system,
+      prompt,
+      maxTokens: maxTokens || 16000,
+      temperature: temperature || 0.7,
+    });
+    
+    return { report: result.text };
+    
+  } else {
+    // OpenAI: generateObject 사용
+    const { generateObject } = await import('ai');
+    const result = await generateObject({
+      model,
+      system,
+      prompt,
+      schema,
+      temperature,
+    });
+    
+    return result.object as { report: string };
+  }
 }

@@ -12,6 +12,8 @@ import * as path from 'path';
 import * as fs from 'node:fs/promises';
 import { getReportModel, trimPrompt } from './ai/providers';
 import { systemPrompt } from './prompt';
+import { generateObjectSafely } from './ai/providers';
+
 
 // PDF 생성을 위한 import (선택적)
 let mdToPdf: any = null;
@@ -272,7 +274,7 @@ async function generateDimensionReport(group: DimensionGroup): Promise<string> {
   
   console.log(`📊 Generating ${group.dimension} report...`);
   
-  const res = await generateObject({
+  const res = await generateObjectSafely({
     model: getReportModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
@@ -300,7 +302,7 @@ ${group.combinedContent}
     }),
   });
   
-  return res.object.report;
+  return res.report; //return res.object.report;
 }
 
 /**
@@ -527,7 +529,7 @@ async function generateStrategicReport(
     `## ${dr.dimension}\n\n${dr.content}`
   ).join('\n\n---\n\n');
 
-  const res = await generateObject({
+  const res = await generateObjectSafely({
     model: getReportModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
@@ -544,7 +546,7 @@ ${allContent}
     }),
   });
   
-  return res.object.strategicReport;
+  return res.report; //return res.object.strategicReport;
 }
 
 /**
@@ -730,7 +732,7 @@ async function generateFallbackReport(
     .map(learning => `<learning>\n${learning}\n</learning>`)
     .join('\n');
 
-  const res = await generateObject({
+  const res = await generateObjectSafely({
     model: getReportModel(),
     system: systemPrompt(),
     prompt: trimPrompt(
@@ -755,7 +757,7 @@ Here is the result of All learnings. <learnings>\n${learningsString}\n</learning
   });
 
   const urlsSection = `\n\n## Sources\n\n${visitedUrls.map(url => `- ${url}`).join('\n')}`;
-  const fallbackReport = res.object.reportMarkdown + urlsSection;
+  const fallbackReport = res.report + urlsSection; //res.object.reportMarkdown + urlsSection; 
 
   const fallbackPath = path.join(outputDir, 'ComprehensiveReport.md');
   await fs.writeFile(fallbackPath, fallbackReport, 'utf-8');

@@ -4,7 +4,7 @@ export class PerplexityCrawler implements Crawler {
   private apiKey: string;
   private model: string;
 
-  constructor(apiKey: string, model: string = 'sonar') {
+  constructor(apiKey: string, model: string = 'sonar-pro') {
     if (!apiKey) {
       throw new Error('Perplexity API key is required.');
     }

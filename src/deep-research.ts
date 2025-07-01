@@ -693,13 +693,48 @@ export async function deepResearch({
           const newBreadth = Math.ceil(breadth / 2);
           const newDepth = depth - 1;
 
-          const newLearnings = await processSerpResult({
+          // 🆕 크롤러 타입에 따라 분기 처리 추가
+          let newLearnings;
+
+          if (crawlerType === 'perplexity') {
+            // Perplexity는 이미 완성된 요약이므로 processSerpResult 스킵
+            const perplexityContent = result.data[0]?.markdown || '';
+            
+            // 간단한 후속 질문만 생성
+            const followUpRes = await generateObject({
+              model: getResearchModel(),
+              system: systemPrompt(),
+              prompt: `Based on this research about "${serpQuery.query}", generate ${newBreadth} follow-up research questions to explore deeper.
+
+          Research content: ${trimPrompt(perplexityContent, 5000)}`,
+              schema: z.object({
+                followUpQuestions: z.array(z.string()).describe('Follow-up research questions'),
+              }),
+            });
+
+            newLearnings = {
+              learnings: [perplexityContent], // 🔥 Perplexity 결과 그대로 사용
+              followUpQuestions: followUpRes.object.followUpQuestions,
+            };
+          } else {
+            // 기존 크롤러들은 기존 방식으로 처리
+            newLearnings = await processSerpResult({
+              query: serpQuery.query,
+              result,
+              numLearnings: 10,
+              numFollowUpQuestions: newBreadth,
+            });
+          }
+
+          // 함수 지움
+          /* const newLearnings = await processSerpResult({
             // 기존 processSerpResult 호출 부분 유지
             query: serpQuery.query,
             result,
             numLearnings: 10, // 기본값 5에서 10으로 증가 (내용 보존을 위해)
             numFollowUpQuestions: newBreadth,
-          });
+          }); */
+
           const allLearnings = [...learnings, ...newLearnings.learnings];
           const allUrls = [...visitedUrls, ...newUrls];
 
