@@ -1,7 +1,8 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
 
-import { deepResearch, writeFinalAnswer,writeFinalReport } from './deep-research';
+import { deepResearch, writeFinalAnswer } from './deep-research';
+import { writeComprehensiveReport } from './comprehensive-report-generator';
 
 const app = express();
 const port = process.env.PORT || 3051;
@@ -75,7 +76,7 @@ app.post('/api/generate-report',async(req:Request,res:Response)=>{
     log(
       `\n\nVisited URLs (${visitedUrls.length}):\n\n${visitedUrls.join('\n')}`,
     );
-    const report = await writeFinalReport({
+    const report = await writeComprehensiveReport({
       prompt:query,
       learnings,
       visitedUrls
