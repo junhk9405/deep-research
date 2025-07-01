@@ -178,29 +178,34 @@ export async function generateSerpQueries({
     Generate ${numQueries} follow-up search queries in English (3–10 words each) that:
     - Generate search queries by selecting one sub-topic under each **"${parentDimension}"** below:
     Solution Overview
-    1-1. Solution definition & scope (what the solution does)
-    1-2. Korean-language search findings and competitive snapshot
-    1-3. Evidence of unmet needs & high-level value proposition
+    1-1. Solution Architecture & Core Capabilities
+    1-2. Korean Market Competitive Landscape
+    1-3. Value Proposition & Unmet Needs Analysis
+    1-4. Go-to-Market Strategy & Positioning
 
     Market Landscape & Growth Dynamics
-    2-1. Global and Korean TAM/SAM with CAGR figures
-    2-2. Business value drivers and inhibitors shaping adoption
-    2-3. Investment, funding and M&A trends across the value chain
+    2-1. Global TAM/SAM Analysis with CAGR Projections
+    2-2. Korea-Specific Market Sizing & Opportunities
+    2-3. Industry Value Chain & Ecosystem Mapping
+    2-4. Investment Trends & M&A Activities
 
     Customer Segmentation & Demand Analysis
-    3-1. Customer Segmentation (industry, size, geography)
-    3-2. Current pain points / jobs-to-be-done and severity metrics
-    3-3. Quantified demand, willingness-to-pay and adoption triggers
+    3-1. Target Customer Segmentation (B2B Focus)
+    3-2. Pain Point Severity & Jobs-to-be-Done Analysis
+    3-3. Demand Quantification & Willingness-to-Pay
+    3-4. Customer Acquisition & Retention Strategy
 
     Technology Assessment & Business Value
-    4-1. Core and emerging technologies with illustrative use cases
-    4-2. Implementation complexity & benchmark references (latency, cost, team size)
-    4-3. Business value per technology (ROI, cost-savings, revenue lift)
+    4-1. Core vs Emerging Technology Stack Analysis
+    4-2. Implementation Complexity & Resource Requirements
+    4-3. Business Value & ROI Projections by Use Case
+    4-4. Technology Roadmap & Evolution Path
 
     Risk & Regulatory Snapshot
-    5-1. Technology entry barriers and inherent limitations
-    5-2. Market entry barriers and competitive moats
-    5-3. Regulatory, compliance and policy risks
+    5-1. Technology & Operational Risks
+    5-2. Market Entry Barriers & Competitive Threats
+    5-3. Regulatory & Compliance Requirements
+    5-4. Risk Mitigation & Contingency Planning
     `; // (위 내용 그대로)
   const res = await generateObject({
     model: getQueryModel(),
@@ -609,7 +614,7 @@ export async function deepResearch({
           // Collect URLs from this search
           const newUrls = compact(result.data.map(item => item.url));
           // breadth 계산 원래대로 유지 (2차 검색도 breadth 값 사용)
-          const newBreadth = Math.ceil(breadth / 2);
+          const newBreadth = Math.ceil(breadth - 1);
           const newDepth = depth - 1;
 
           // 🆕 크롤러 타입에 따라 분기 처리 추가
@@ -716,7 +721,7 @@ export async function deepResearch({
 
             return await deepResearch({
               query: nextQuery,
-              breadth: Math.ceil(breadth / 2),
+              breadth: Math.ceil(breadth - 1),
               depth: depth - 1,
               learnings: allLearnings,
               visitedUrls: allUrls,

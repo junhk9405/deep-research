@@ -679,3 +679,254 @@ pip install crawl4ai
     2.  `tsconfig.json` 파일 설정이 올바른지 확인합니다.
     3.  `npm install` 또는 `yarn install`을 실행하여 모든 의존성이 최신 상태이고 올바르게 설치되었는지 확인합니다.
 
+--------------------------
+Deep Research 프로젝트 구조 업데이트 (Streamlit UI 추가)
+새로 추가된 주요 구성 요소
+1. Streamlit 웹 UI (streamlit_app.py)
+1.1. 구조와 역할
+
+위치: 프로젝트 루트의 streamlit_app.py
+역할: 사용자 친화적인 웹 인터페이스 제공
+기술 스택: Streamlit, Python requests
+백엔드 연동: Express.js API 서버와 HTTP 통신
+
+1.2. 주요 기능
+
+연구 주제 입력 폼
+
+메인 쿼리 입력 (텍스트 영역)
+솔루션 컨텍스트 입력 (선택사항)
+고급 설정 (깊이, 너비 조절)
+예상 소요시간 표시
+
+
+실시간 진행률 표시
+
+진행률 바 및 퍼센티지
+현재 작업 중인 쿼리 표시
+경과 시간 및 완료된 쿼리 수
+연구 단계별 정보
+
+
+결과 다운로드 인터페이스
+
+생성된 PDF 리포트 목록
+다운로드 링크 제공
+연구 통계 요약 (조사한 웹페이지 수, 생성된 인사이트 수 등)
+
+
+세션 상태 관리
+
+연구 시작 → 진행 중 → 완료/오류 상태 관리
+사용자별 독립적인 세션 유지
+
+
+
+1.3. 클래스 구조
+pythonclass ResearchAPI:
+    @staticmethod
+    def start_research(query, depth, breadth, solution_context) -> session_id
+    @staticmethod  
+    def get_status(session_id) -> status_info
+    @staticmethod
+    def get_download_url(session_id, filename) -> download_url
+2. Express.js API 서버 (src/api.ts)
+2.1. 구조와 역할
+
+위치: src/api.ts
+역할: Streamlit UI와 Deep Research 시스템 간의 중간 계층
+포트: 기본값 3051
+기술: Express.js, TypeScript, CORS 지원
+
+2.2. API 엔드포인트
+
+연구 시작: POST /api/research/start
+json{
+  "query": "연구 주제",
+  "depth": 2,
+  "breadth": 5,
+  "solutionContext": "선택적 컨텍스트"
+}
+
+입력 검증 (쿼리 최소 5자, depth 1-3, breadth 3-10)
+고유 세션 ID 생성 및 반환
+백그라운드에서 deepResearch 함수 실행
+
+
+진행상황 조회: GET /api/research/status/:sessionId
+json{
+  "status": "running|completed|error",
+  "progress": {
+    "completedQueries": 3,
+    "totalQueries": 15,
+    "currentDepth": 1,
+    "totalDepth": 2,
+    "currentQuery": "현재 처리 중인 쿼리"
+  },
+  "elapsedTime": 180000
+}
+
+파일 다운로드: GET /api/research/download/:sessionId/:filename
+
+생성된 PDF/MD 파일 다운로드
+세션 검증 및 파일 존재 확인
+
+
+세션 취소: DELETE /api/research/cancel/:sessionId
+
+진행 중인 연구 중단
+
+
+
+2.3. 세션 관리 시스템
+typescriptinterface ResearchSession {
+  status: 'running' | 'completed' | 'error';
+  progress?: ResearchProgress;
+  result?: any;
+  error?: string;
+  reportPaths?: string[];
+  startTime: number;
+}
+
+// 메모리 기반 세션 저장소 (24시간 TTL)
+const sessions = new Map<string, ResearchSession>();
+3. 통합 리포트 생성 시스템 개선
+3.1. 새로운 리포트 생성기들
+
+comprehensive-report-generator.ts
+
+역할: 모든 형태의 리포트를 한 번에 생성
+출력: Dimension별 리포트 + 통합 리포트 + 전략적 리포트
+PDF 생성: md-to-pdf 라이브러리 사용 (선택적)
+
+
+dimension-report-generator.ts
+
+역할: 5개 전략 차원별 전문 리포트 생성
+차원: Solution Overview, Market Landscape, Customer Segmentation, Technology Assessment, Risk & Regulatory
+
+
+strategic-report-generator.ts
+
+역할: AI가 5개 차원을 종합하여 6번째 전략 리포트 생성
+내용: 후보 기술 선정, 개발계획, 마일스톤
+
+
+
+3.2. 리포트 생성 워크플로우
+1. deepResearch 실행 → Middle/, FollowUp_* 폴더에 개별 파일 저장
+2. scanDimensionFiles → 저장된 파일들을 Dimension별로 그룹핑
+3. generateDimensionReport → 각 Dimension별 전문 리포트 생성
+4. generateStrategicReport → 6번째 전략 리포트 생성
+5. generateConsolidatedReport → 모든 리포트 통합
+6. PDF 생성 (선택적)
+4. 확장된 크롤러 시스템
+4.1. 새로운 크롤러들
+
+Perplexity Crawler (src/crawlers/perplexity/client.ts)
+
+모델: sonar-pro
+특징: 완성된 요약 제공, 추가 processSerpResult 불필요
+시스템 프롬프트: 포괄적이고 상세한 설명 중심
+
+
+Brave Search 지원 (Crawl4ai 내부)
+
+API: Brave Search API 연동
+특징: Google 대안으로 사용 가능
+
+
+Rate Limiting 시스템 (src/crawlers/rate-limiter.ts)
+typescriptexport class RateLimiter {
+  private requestHistory: number[] = [];
+  private config: RateLimitConfig;
+  
+  async checkAndWait(): Promise<void>
+  getStatus(): { requestsInLastMinute: number; maxRequests: number }
+}
+
+// 크롤러별 설정
+export const RATE_LIMIT_CONFIGS = {
+  firecrawl: { requestsPerMinute: 7, delayBetweenRequests: 10000 },
+  perplexity: { requestsPerMinute: 100, delayBetweenRequests: 10 },
+  brave: { requestsPerMinute: 60, delayBetweenRequests: 1000 }
+};
+
+
+4.2. 개선된 Crawl4ai
+
+검색 제공자: Google/Brave 선택 가능
+병렬 처리: 동시성 제한 및 재시도 로직
+TUI 지원: 진행률 표시가 Node.js 콘솔로 파이핑
+
+5. AI 모델 프로바이더 확장
+5.1. 지원 모델 확장 (src/ai/providers.ts)
+typescript// 지원 프로바이더들
+const openai = createOpenAI({...});
+const anthropic = createAnthropic({...}); // 새로 추가
+const fireworks = createFireworks({...});
+
+// 지원 모델들
+- Claude Sonnet 4 (claude-sonnet-4-20250514)
+- O3 Mini (o3-2025-04-16)  
+- GPT-4o Mini
+- DeepSeek R1
+- GPT-3.5 Turbo
+5.2. 모델별 전용 함수들
+typescriptexport function getQueryModel(): LanguageModelV1     // 검색어 생성용
+export function getResearchModel(): LanguageModelV1  // 연구 분석용  
+export function getReportModel(): LanguageModelV1    // 리포트 작성용
+export function getAnswerModel(): LanguageModelV1    // 최종 답변용
+6. 업데이트된 시스템 아키텍처
+6.1. 새로운 데이터 흐름
+[Streamlit UI] 
+    ↓ HTTP API 호출
+[Express.js API Server (포트 3051)]
+    ↓ 세션 관리 + 백그라운드 실행  
+[Deep Research System (TypeScript)]
+    ↓ 크롤러 호출
+[Crawl4ai/Perplexity/Firecrawl + Google/Brave API]
+    ↓ 웹 데이터 수집
+[AI Model Providers (OpenAI/Anthropic/Fireworks)]
+    ↓ 분석 및 리포트 생성
+[Comprehensive Report Generator]
+    ↓ 파일 생성 
+[PDF/MD 파일들] ← 다운로드 ← [Streamlit UI]
+6.2. 컴포넌트 간 상호작용
+사용자 ←→ Streamlit UI ←→ Express API ←→ Deep Research
+                                ↓
+                        세션 관리 + 진행률 추적
+                                ↓  
+                        백그라운드 연구 실행
+                                ↓
+                    Comprehensive Report Generation
+                                ↓
+                            PDF/MD 파일 생성
+7. 배포 및 실행 구조
+7.1. 다중 프로세스 실행
+
+API 서버: node dist/api.js (포트 3051)
+Streamlit UI: streamlit run streamlit_app.py (기본 포트 8501)
+Python 환경: crawl4ai 의존성 설치 필요
+
+7.2. 새로운 환경 변수들
+env# 기존 환경 변수들 + 추가된 것들
+PORT=3051                              # API 서버 포트
+SEARCH_PROVIDER=google|brave           # 검색 제공자 선택
+BRAVE_SEARCH_API_KEY=...              # Brave Search API 키
+ANTHROPIC_KEY=...                     # Claude 모델용
+QUERY_MODEL=gpt-4o-mini               # 모델별 지정
+RESEARCH_MODEL=gpt-4o-mini
+REPORT_MODEL=o3-2025-04-16
+ANSWER_MODEL=gpt-4o-mini
+8. 주요 개선사항 요약
+
+사용자 경험 대폭 개선: CLI → 직관적인 웹 UI
+실시간 모니터링: 연구 진행률 실시간 추적
+다중 크롤러 지원: Perplexity, Brave 등 추가 옵션
+정교한 리포트 시스템: 6가지 차원의 전문 리포트
+PDF 자동 생성: 최종 결과물의 전문적 형태 제공
+확장성: 새로운 AI 모델과 크롤러 쉽게 추가 가능
+안정성: Rate limiting, 오류 처리, 세션 관리
+
+이러한 변화로 인해 기존의 단순한 CLI 도구에서 기업급 연구 자동화 플랫폼으로 발전했습니다.

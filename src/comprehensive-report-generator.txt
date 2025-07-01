@@ -152,8 +152,7 @@ const STRATEGIC_PROMPT = `
 사업적인 관점에서 어떤 전략을 취해야 하는지에 대해 아래 당사 현황을 바탕으로 보고서를 작성해주세요.
 - 보고서 전체 다양한 관점에서 내용을 꼼꼼하게 읽고 의사결정을 해주세요. 
 - 각 섹션별로 최소 3-4개의 상세한 문단을 작성하고, 구체적인 데이터와 통계, 사례를 포함해주세요.
-- 전문적이고 심층적인 분석을 제공해주세요. 
-- Source는 적지마세요.
+- 전문적이고 심층적인 분석을 제공해주세요.
 
 - 당사 현황 - 
 우리 기업은 매출 5,000억 영업이익 200억 원 수준의 
@@ -172,25 +171,6 @@ interface DimensionGroup {
   dimension: string;
   files: DimensionFile[];
   combinedContent: string;
-}
-
-// 새로 추가할 인터페이스들
-interface SourceInfo {
-  originalId: number;
-  newId: number;
-  url: string;
-  title?: string;
-  fileName: string;
-}
-
-interface ProcessedFileContent {
-  content: string;
-  sources: SourceInfo[];
-}
-
-interface DimensionGroupWithSources extends DimensionGroup {
-  combinedContentWithRenumberedSources: string;
-  allSources: SourceInfo[];
 }
 
 interface DimensionReport {
@@ -262,133 +242,12 @@ function extractDimensionFromFileName(fileName: string): string | null {
   return null;
 }
 
-function processFileWithSourceRenumbering(
-  fileContent: string,
-  fileName: string,
-  startingNumber: number
-): ProcessedFileContent {
-  
-  console.log(`🔄 Processing ${fileName}, starting from [${startingNumber}]`);
-  
-  // Sources 섹션 분리
-  const sourcesPatterns = [
-    /---\s*\n\s*\*?\*?Sources?\*?\*?:?\s*\n/i,
-    /\n\s*\*?\*?Sources?\*?\*?:?\s*\n/i,
-    /\n\s*##\s*Sources?\s*\n/i
-  ];
-  
-  let parts: string[] = [];
-  let sourcesSection = '';
-  let mainContent = fileContent;
-  
-  for (const pattern of sourcesPatterns) {
-    parts = fileContent.split(pattern);
-    if (parts.length > 1) {
-      mainContent = parts[0] || '';
-      sourcesSection = parts[1] || '';
-      break;
-    }
-  }
-  
-
-  // Sources 섹션에서 소스 정보 추출
-  const sourceMap = new Map<number, { url: string; title?: string }>();
-
-  if (sourcesSection) {
-    const sourceLines = sourcesSection.split('\n').filter(line => line.trim());
-    
-    sourceLines.forEach(line => {
-      const patterns = [
-        /(\d+)\.\s*(.+?)(?:\s*-\s*(https?:\/\/[^\s]+))?\s*$/,
-        /(\d+)\.\s*(https?:\/\/[^\s]+)\s*(?:-\s*(.+?))?\s*$/,
-        /(\d+)\.\s*\[([^\]]+)\]\s*-\s*(https?:\/\/[^\s]+)/,
-        /(\d+)\.\s*(.+)/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
-        if (match && match.length > 1 && match[1]) { // ✅ 더 안전한 체크
-          const originalId = parseInt(match[1]);
-          let title: string | undefined;
-          let url: string = '';
-          
-          // match[2], match[3] 안전하게 접근
-          const secondGroup = match[2] || '';
-          const thirdGroup = match[3] || '';
-          
-          if (thirdGroup && thirdGroup.startsWith('http')) {
-            title = secondGroup.trim() || undefined;
-            url = thirdGroup;
-          } else if (secondGroup && secondGroup.startsWith('http')) {
-            url = secondGroup;
-            title = thirdGroup.trim() || undefined;
-          } else {
-            title = secondGroup.trim() || undefined;
-            url = (title && title.startsWith('http')) ? title : '';
-          }
-          
-          if (url) {
-            sourceMap.set(originalId, { url, title });
-          }
-          break;
-        }
-      }
-    });
-  }
-
-  // 본문에서 사용된 인용 번호 찾기 및 매핑
-  const citationPattern = /\[(\d+)\]/g;
-  const usedSources = new Set<number>();
-  const sourceMapping = new Map<number, number>();
-  let currentNewNumber = startingNumber;
-  
-  let match: RegExpExecArray | null;
-  while ((match = citationPattern.exec(mainContent)) !== null) {
-    if (match && match.length > 1 && match[1]) {
-      const originalId = parseInt(match[1]);
-      usedSources.add(originalId);
-    }
-  }
-  
-  // ✅ finalSources를 여기서 선언 (루프 밖에서)
-  const sortedUsedSources = Array.from(usedSources).sort((a, b) => a - b);
-  const finalSources: SourceInfo[] = [];
-  
-  sortedUsedSources.forEach(originalId => {
-    const sourceInfo = sourceMap.get(originalId);
-    if (sourceInfo) {
-      sourceMapping.set(originalId, currentNewNumber);
-      finalSources.push({
-        originalId,
-        newId: currentNewNumber,
-        url: sourceInfo.url,
-        title: sourceInfo.title,
-        fileName
-      });
-      currentNewNumber++;
-    }
-  });
-  
-  // 본문의 인용 번호를 새 번호로 교체
-  let processedContent = mainContent;
-  sourceMapping.forEach((newId, originalId) => {
-    const originalPattern = new RegExp(`\\[${originalId}\\]`, 'g');
-    processedContent = processedContent.replace(originalPattern, `[${newId}]`);
-  });
-  
-  return {
-    content: processedContent.trim(),
-    sources: finalSources  // ✅ 이제 에러 없음
-  };
-}
-
 /**
  * Dimension별로 파일 그룹핑
  */
-function groupFilesByDimension(files: DimensionFile[]): DimensionGroupWithSources[] {
+function groupFilesByDimension(files: DimensionFile[]): DimensionGroup[] {
   const groups = new Map<string, DimensionFile[]>();
   
-  // 1. 기본 그룹핑
   for (const file of files) {
     if (!groups.has(file.dimension)) {
       groups.set(file.dimension, []);
@@ -396,55 +255,17 @@ function groupFilesByDimension(files: DimensionFile[]): DimensionGroupWithSource
     groups.get(file.dimension)!.push(file);
   }
   
-  // 2. 각 그룹별로 소스 재정렬하여 결합
-  return Array.from(groups.entries()).map(([dimension, files]) => {
-    console.log(`\n📊 Processing dimension: "${dimension}" (${files.length} files)`);
-    
-    let combinedContent = '';
-    let combinedContentWithRenumberedSources = '';
-    const allSources: SourceInfo[] = [];
-    let currentStartingNumber = 1;
-    
-    files.forEach((file, index) => {
-      const fileName = path.basename(file.filePath, '.md');
-      
-      // 🔥 소스 재정렬 처리
-      const processed = processFileWithSourceRenumbering(
-        file.content,
-        fileName,
-        currentStartingNumber
-      );
-      
-      // 파일 구분자 추가 (첫 번째 파일 제외)
-      if (index > 0) {
-        combinedContent += '\n\n---\n\n';
-        combinedContentWithRenumberedSources += '\n\n---\n\n';
-      }
-      
-      combinedContent += file.content; // 기존 방식 (호환성)
-      combinedContentWithRenumberedSources += processed.content; // 재정렬된 방식
-      allSources.push(...processed.sources);
-      
-      // 다음 파일의 시작 번호 업데이트
-      currentStartingNumber += processed.sources.length;
-    });
-    
-    console.log(`   ✅ "${dimension}": ${allSources.length} total sources`);
-    
-    return {
-      dimension,
-      files,
-      combinedContent, // 기존 호환성 유지
-      combinedContentWithRenumberedSources, // 새로운 재정렬된 버전
-      allSources
-    };
-  });
+  return Array.from(groups.entries()).map(([dimension, files]) => ({
+    dimension,
+    files,
+    combinedContent: files.map(f => f.content).join('\n\n---\n\n')
+  }));
 }
 
 /**
  * Dimension별 전용 리포트 생성
  */
-async function generateDimensionReport(group: DimensionGroupWithSources): Promise<string> {
+async function generateDimensionReport(group: DimensionGroup): Promise<string> {
   const prompt = DIMENSION_PROMPTS[group.dimension as keyof typeof DIMENSION_PROMPTS];
   
   if (!prompt) {
@@ -452,7 +273,6 @@ async function generateDimensionReport(group: DimensionGroupWithSources): Promis
   }
   
   console.log(`📊 Generating ${group.dimension} report...`);
-  console.log(`   📎 Using ${group.allSources.length} renumbered sources`);
   
   const res = await generateObjectSafely({
     model: getReportModel(),
@@ -462,20 +282,18 @@ async function generateDimensionReport(group: DimensionGroupWithSources): Promis
 
 **연구 자료:**
 다음은 "${group.dimension}" 관련하여 수집된 연구 자료입니다.
-소스 번호는 이미 [1]부터 [${group.allSources.length}]까지 순차적으로 정렬되어 있습니다.
 
 <research_content>
-${group.combinedContentWithRenumberedSources}
+${group.combinedContent}
 </research_content>
 
 위 연구 자료를 바탕으로 해당 Dimension에 특화된 전문 리포트를 한국어로 작성해주세요.
 
 **작성 가이드라인:**
-- 각 섹션별로 최소 3-4개의 줄글 형태의 상세한 문단 작성
+- 각 섹션별로 최소 3-4개의 상세한 문단 작성
 - 구체적인 데이터, 통계, 사례를 포함
 - 전문적이고 심층적인 분석 제공
-- 제목 등은 Markdown 형식으로 구조화
-- 인용할 때는 제공된 [1]~[${group.allSources.length}] 번호를 그대로 사용
+- Markdown 형식으로 구조화
 - 최소 2,000단어 이상의 상세한 내용
 `
     ),
@@ -484,22 +302,9 @@ ${group.combinedContentWithRenumberedSources}
     }),
   });
   
-  // 소스 섹션 추가
-  let sourcesSection = '\n\n---\n\n## Sources\n\n';
-  group.allSources.forEach(source => {
-    if (source.title && source.title !== source.url) {
-      sourcesSection += `${source.newId}. ${source.title} - ${source.url}\n`;
-    } else {
-      sourcesSection += `${source.newId}. ${source.url}\n`;
-    }
-  });
-  
-  const reportWithSources = res.report + sourcesSection;
-  
-  console.log(`   ✅ Generated report with ${group.allSources.length} properly numbered sources`);
-  
-  return reportWithSources;
+  return res.report; //return res.object.report;
 }
+
 /**
  * 통합 리포트 생성 (ConsolidatedReport)
  */
