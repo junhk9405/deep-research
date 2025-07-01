@@ -542,7 +542,7 @@ ${allContent}
 `
     ),
     schema: z.object({
-      strategicReport: z.string().describe('전략적으로 재구성된 Executive Report (Markdown 형식)'),
+      report: z.string().describe('전략적으로 재구성된 Executive Report (Markdown 형식)'),
     }),
   });
   
