@@ -3,14 +3,9 @@
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "tsx": "tsx --env-file=.env.local",
-    "start": "tsx --env-file=.env.local src/run.ts",
-    "api": "tsx --env-file=.env.local src/api.ts",
-    "docker": "tsx src/run.ts",
-    "build": "tsc && cpx \"src/crawlers/crawl4ai/scripts/**/*.py\" \"dist/crawlers/crawl4ai/scripts\"",
-    "generate-report": "tsx --env-file=.env.local src/report-generator.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:server": "tsx watch src/api.ts",
+    "start": "node dist/api.js",
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
@@ -36,6 +31,7 @@
     "ai": "^4.1.17",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
     "express": "^4.18.3",
     "js-tiktoken": "^1.0.17",
     "lodash-es": "^4.17.21",

@@ -1,0 +1,197 @@
+import fs from 'fs';
+import path from 'path';
+
+export interface SourceInfo {
+    originalId: number;
+    newId: number;
+    url: string;
+    title?: string;
+    fileName: string;
+}
+
+export interface ProcessedFileContent {
+    content: string;
+    sources: SourceInfo[];
+  }
+  
+  export interface DimensionWithSources {
+    dimension: string;
+    combinedContent: string;
+    allSources: SourceInfo[];
+    files: any[];
+  }
+  
+  /**
+   * 개별 파일의 소스를 파싱하고 재정렬하는 함수
+   */
+  export function processFileWithSourceRenumbering(
+    fileContent: string,
+    fileName: string,
+    startingNumber: number
+  ): ProcessedFileContent {
+    
+    // Sources 섹션 분리
+    const parts = fileContent.split(/---\s*\n\s*\*?\*?Sources?\*?\*?:?\s*\n/);
+    const mainContent = parts[0] || '';
+    const sourcesSection = parts[1] || '';
+    
+    // Sources 섹션에서 소스 정보 추출
+    const sourceMap = new Map<number, { url: string; title?: string }>();
+    
+    if (sourcesSection) {
+      const sourceLines = sourcesSection.split('\n').filter(line => line.trim());
+      
+      sourceLines.forEach(line => {
+        const match = line.match(/(\d+)\.\s*(.+?)(?:\s*-\s*(https?:\/\/[^\s]+))?\s*$/);
+        if (match) {
+          const originalId = parseInt(match[1]);
+          const titleOrUrl = match[2]?.trim() || '';
+          const url = match[3] || (titleOrUrl.startsWith('http') ? titleOrUrl : '');
+          const title = match[3] ? titleOrUrl : undefined;
+          
+          if (url) {
+            sourceMap.set(originalId, { url, title });
+          }
+        }
+      });
+    }
+    
+    // 본문에서 사용된 인용 번호 찾기 및 매핑
+    const citationPattern = /\[(\d+)\]/g;
+    const usedSources = new Set<number>();
+    const sourceMapping = new Map<number, number>();
+    let currentNewNumber = startingNumber;
+    
+    let match: RegExpExecArray | null;
+    while ((match = citationPattern.exec(mainContent)) !== null) {
+      const originalId = parseInt(match[1]);
+      usedSources.add(originalId);
+    }
+    
+    const sortedUsedSources = Array.from(usedSources).sort((a, b) => a - b);
+    const finalSources: SourceInfo[] = [];
+    
+    sortedUsedSources.forEach(originalId => {
+      const sourceInfo = sourceMap.get(originalId);
+      if (sourceInfo) {
+        sourceMapping.set(originalId, currentNewNumber);
+        finalSources.push({
+          originalId,
+          newId: currentNewNumber,
+          url: sourceInfo.url,
+          title: sourceInfo.title,
+          fileName
+        });
+        currentNewNumber++;
+      }
+    });
+    
+    // 본문의 인용 번호를 새 번호로 교체
+    let processedContent = mainContent;
+    sourceMapping.forEach((newId, originalId) => {
+      const originalPattern = new RegExp(`\\[${originalId}\\]`, 'g');
+      processedContent = processedContent.replace(originalPattern, `[${newId}]`);
+    });
+    
+    return {
+      content: processedContent.trim(),
+      sources: finalSources
+    };
+  }
+  
+  /**
+   * Dimension 그룹의 모든 파일에 대해 소스 넘버링을 처리하는 함수
+   */
+  export function processDimensionGroupWithSources(group: any): DimensionWithSources {
+    let combinedContent = '';
+    const allSources: SourceInfo[] = [];
+    let currentStartingNumber = 1;
+    
+    console.log(`🔄 Processing ${group.files.length} files for ${group.dimension}`);
+    
+    group.files.forEach((file: any, index: number) => {
+      const fileName = path.basename(file.filePath, '.md');
+      console.log(`   📄 Processing: ${fileName}`);
+      
+      const processed = processFileWithSourceRenumbering(
+        file.content,
+        fileName,
+        currentStartingNumber
+      );
+      
+      // 파일 구분자 추가 (첫 번째 파일 제외)
+      if (index > 0) {
+        combinedContent += '\n\n---\n\n';
+      }
+      
+      combinedContent += processed.content;
+      allSources.push(...processed.sources);
+      
+      // 다음 파일의 시작 번호 업데이트
+      currentStartingNumber += processed.sources.length;
+      
+      console.log(`   ✅ ${fileName}: ${processed.sources.length} sources, next starts at [${currentStartingNumber}]`);
+    });
+    
+    console.log(`📊 Total sources collected for ${group.dimension}: ${allSources.length}`);
+    
+    return {
+      files: group.files,
+      dimension: group.dimension,
+      combinedContent,
+      allSources
+    };
+  }
+  
+  /**
+   * 소스 섹션을 생성하는 함수
+   */
+  export function generateSourcesSection(sources: SourceInfo[]): string {
+    if (sources.length === 0) return '';
+    
+    let sourcesSection = '\n\n---\n\n## Sources\n\n';
+    
+    sources.forEach(source => {
+      if (source.title && source.title !== source.url) {
+        sourcesSection += `${source.newId}. ${source.title} - ${source.url}\n`;
+      } else {
+        sourcesSection += `${source.newId}. ${source.url}\n`;
+      }
+    });
+    
+    // 원본 파일 정보도 추가
+    sourcesSection += '\n### 데이터 출처별 소스 번호\n\n';
+    const fileGroups = new Map<string, number[]>();
+    
+    sources.forEach(source => {
+      if (!fileGroups.has(source.fileName)) {
+        fileGroups.set(source.fileName, []);
+      }
+      fileGroups.get(source.fileName)!.push(source.newId);
+    });
+    
+    fileGroups.forEach((sourceNumbers, fileName) => {
+      const sortedNumbers = sourceNumbers.sort((a, b) => a - b);
+      sourcesSection += `- **${fileName}**: [${sortedNumbers.join('], [')}]\n`;
+    });
+    
+    return sourcesSection;
+  }
+  
+/**
+ * 파일 내용을 처리하는 함수 (comprehensive-report-generator.ts에서 사용)
+ */
+export async function processFileContent(filePath: string): Promise<ProcessedFileContent> {
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    const fileName = path.basename(filePath, '.md');
+    
+    return processFileWithSourceRenumbering(content, fileName, 1);
+  } catch (error) {
+    console.error(`Error processing file ${filePath}:`, error);
+    return {
+      content: '',
+      sources: []
+    };
+  }
+}
