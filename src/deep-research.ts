@@ -150,62 +150,72 @@ export async function generateSerpQueries({
   const isFirstLevel = !parentDimension || parentDimension.trim() === '';
 
   // ✅ 2. 프롬프트 블록 정의
-  const firstLevelPrompt = `You are conducting an initial broad search to explore the topic across the 5 core strategic dimensions listed below.
+  const firstLevelPrompt = `You are conducting an initial broad search to explore the topic across the 6 core strategic dimensions listed below.
 
-    Generate 5 search queries in English — one for each of the following business-critical strategic dimensions:
+    Generate 6 search queries in English — one for each of the following business-critical strategic dimensions:
     TOPIC ANCHOR
     Each query MUST:
       • Add only dimension-specific terms that relate directly to this topic.
       • Exclude unrelated or broader synonyms.
 
-    Solution Overview
-    — solution scope and functional definition, Korean-language search insights on competing offerings, evidence of unmet needs and pain-point intensity, and the high-level value proposition that closes the gap
+    Solution Overview & Market Analysis
+    — solution scope and functional definition, global and Korean market size with growth rates (TAM/SAM/CAGR), primary value proposition, and major application areas across industries
 
-    Market Landscape & Growth Dynamics
-    — global & regional TAM/SAM with CAGR figures, industry or geographic break-outs, core business-value drivers and inhibitors, plus funding/M&A trends shaping adoption timing
+    Customer Intelligence & Business Case  
+    — target customer segmentation taxonomy (industry, size, geography), quantified pain-point severity and business impact, ROI case studies and success stories, plus customer willingness-to-pay indicators
 
-    Customer Segmentation & Demand Analysis
-    — segmentation taxonomy and key personas, quantified pain-point severity (frequency × cost), willingness-to-pay indicators, and adoption triggers across size, industry, or region
+    Technology Landscape & Trends
+    — latest technology trends and emerging innovations for 2024-2025, core technology stack patterns and architecture options, technology maturity assessment, and open-source ecosystem plus standardization status
 
-    Technology Assessment & Business Value
-    — core and emerging technology options with illustrative use cases, integration complexity and benchmark references (latency, cost, team size), scalability/talent readiness, and ROI or cost-benefit differentials per technology
+    Competitive Technology Analysis
+    — major competitors and market leaders with technology positioning, competitive feature comparison and technical capabilities, vendor ecosystem and partnership landscape, plus differentiation opportunities and competitive advantages
 
-    Risk & Regulatory Snapshot
-    — technology and market entry barriers, data-privacy & sector-specific regulations, forthcoming compliance or AI-governance timelines, cybersecurity/ethical risks, and recommended mitigation guidelines
+    Technology Implementation & ROI
+    — proven implementation methodologies and best practices, development challenges and technical risk mitigation, quantified cost-benefit analysis with ROI calculation examples, and scalability plus performance benchmark data
+
+    Risk & Regulatory Analysis
+    — technical limitations and implementation risks, current and upcoming regulatory requirements plus compliance standards, security and privacy concerns with data protection, and market entry barriers plus adoption challenges
 
     Each query should view the user’s topic through the lens of the corresponding strategic dimension.`; // (위 내용 그대로)
   const secondLevelPrompt = `You are conducting a focused second-level search on the dimension: **${parentDimension}**
     Generate ${numQueries} follow-up search queries in English (3–10 words each) that:
     - Generate search queries by selecting one sub-topic under each **"${parentDimension}"** below:
     Solution Overview
-    1-1. Solution Architecture & Core Capabilities
-    1-2. Korean Market Competitive Landscape
-    1-3. Value Proposition & Unmet Needs Analysis
-    1-4. Go-to-Market Strategy & Positioning
+    Solution Overview & Market Analysis:
+    1-1. Solution Definition & Core Features (functionality, technical specs, capabilities)
+    1-2. Market Size & Growth Dynamics (TAM/SAM/CAGR, growth drivers, geographic trends)
+    1-3. Value Proposition & Competitive Position (differentiation, market positioning)
+    1-4. Industry Applications & Use Cases (verticals, scenarios, adoption patterns)
 
-    Market Landscape & Growth Dynamics
-    2-1. Global TAM/SAM Analysis with CAGR Projections
-    2-2. Korea-Specific Market Sizing & Opportunities
-    2-3. Industry Value Chain & Ecosystem Mapping
-    2-4. Investment Trends & M&A Activities
+    Customer Intelligence & Business Case:
+    2-1. Customer Segmentation & Personas (target segments, decision-makers, buyer journey)
+    2-2. Pain Points & Business Impact (problems, severity metrics, current costs)
+    2-3. ROI & Business Value (quantified ROI, payback periods, efficiency gains)
+    2-4. Success Stories & Case Studies (testimonials, reference customers, proven results)
 
-    Customer Segmentation & Demand Analysis
-    3-1. Target Customer Segmentation (B2B Focus)
-    3-2. Pain Point Severity & Jobs-to-be-Done Analysis
-    3-3. Demand Quantification & Willingness-to-Pay
-    3-4. Customer Acquisition & Retention Strategy
+    Technology Landscape & Trends:
+    3-1. Latest Technology Trends & Roadmap (2024-2025 trends, emerging innovations)
+    3-2. Technology Stack & Architecture (components, patterns, infrastructure requirements)
+    3-3. Technology Maturity & Standards (readiness level, industry standards, protocols)
+    3-4. Ecosystem & Open Source (developer community, open-source projects, integrations)
 
-    Technology Assessment & Business Value
-    4-1. Core vs Emerging Technology Stack Analysis
-    4-2. Implementation Complexity & Resource Requirements
-    4-3. Business Value & ROI Projections by Use Case
-    4-4. Technology Roadmap & Evolution Path
+    Competitive Technology Analysis:
+    4-1. Major Competitors & Market Leaders (key players, market share, positioning)
+    4-2. Technology Feature Comparison (feature comparison, technical capabilities, benchmarks)
+    4-3. Vendor Ecosystem & Partnerships (partner networks, integrations, alliances)
+    4-4. Differentiation & Competitive Advantage (USPs, market gaps, opportunities)
 
-    Risk & Regulatory Snapshot
-    5-1. Technology & Operational Risks
-    5-2. Market Entry Barriers & Competitive Threats
-    5-3. Regulatory & Compliance Requirements
-    5-4. Risk Mitigation & Contingency Planning
+    Technology Implementation & ROI:
+    5-1. Implementation Methodology & Best Practices (deployment approaches, frameworks)
+    5-2. Development Challenges & Solutions (obstacles, risk mitigation, problem-solving)
+    5-3. Cost-Benefit Analysis & ROI Calculation (costs, TCO, ROI methods, examples)
+    5-4. Performance & Scalability Benchmarks (metrics, optimization, capacity planning)
+
+    Risk & Regulatory Analysis:
+    6-1. Technical Risks & Limitations (technology limits, failure modes, reliability)
+    6-2. Regulatory & Compliance Requirements (regulations, standards, certifications)
+    6-3. Security & Privacy Concerns (cybersecurity, data privacy, protection measures)
+    6-4. Market Barriers & Adoption Challenges (entry barriers, adoption obstacles, change management)
     `; // (위 내용 그대로)
   const res = await generateObject({
     model: getQueryModel(),
@@ -240,11 +250,12 @@ ${learnings ?
         ? z.array(
             z.object({
               dimension: z.enum([
-                "Solution Overview",
-                "Market Landscape & Growth Dynamics",
-                "Customer Segmentation & Demand Analysis",
-                "Technology Assessment & Business Value",
-                "Risk & Regulatory Snapshot"
+                "SolutionOverviewMarketAnalysis",
+                "CustomerIntelligenceBusinessCase",
+                "TechnologyLandscapeTrends",
+                "CompetitiveTechnologyAnalysis",
+                "TechnologyImplementationROI",
+                "RiskRegulatoryAnalysis"
               ]).describe("The strategic dimension this query focuses on."),
               query: z.string().describe('Simple, broad search query (3-7 words, covering key aspects of the topic).'),
               researchGoal: z
@@ -254,8 +265,8 @@ ${learnings ?
                 ),
             })
           )
-          .length(5) // 1차 검색: 5가지 디멘션 강제
-          .describe(`List of 5 simple, broad SERP queries covering different strategic aspects.`)
+          .length(6) // 1차 검색: 6가지 디멘션 강제
+          .describe(`List of 6 simple, broad SERP queries covering different strategic aspects.`)
         : z.array( // 2차 검색: dimension 필드 완전 제거
             z.object({
               query: z.string().describe('Simple follow-up search query (3-10 words).'),
@@ -614,7 +625,7 @@ export async function deepResearch({
           // Collect URLs from this search
           const newUrls = compact(result.data.map(item => item.url));
           // breadth 계산 원래대로 유지 (2차 검색도 breadth 값 사용)
-          const newBreadth = Math.ceil(breadth - 1);
+          const newBreadth = Math.ceil(breadth - 2);
           const newDepth = depth - 1;
 
           // 🆕 크롤러 타입에 따라 분기 처리 추가
@@ -721,7 +732,7 @@ export async function deepResearch({
 
             return await deepResearch({
               query: nextQuery,
-              breadth: Math.ceil(breadth - 1),
+              breadth: Math.ceil(breadth - 2),
               depth: depth - 1,
               learnings: allLearnings,
               visitedUrls: allUrls,
