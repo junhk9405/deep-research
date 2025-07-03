@@ -40,10 +40,10 @@ async function run() {
   const breadth =
     parseInt(
       await askQuestion(
-        '조사 너비(하위 주제 수)를 입력하세요 (권장 3-7, 기본 5): ',
+        '조사 너비(하위 주제 수)를 입력하세요 (권장 3-7, 기본 6): ',
       ),
       10,
-    ) || 5;
+    ) || 6;
   const depth =
     parseInt(
       await askQuestion('조사 깊이(단계)를 입력하세요 (권장 1-3, 기본 2): '),

@@ -110,7 +110,7 @@ export type ResearchResult = {
 };
 
 // increase this if you have higher API rate limits
-const ConcurrencyLimit = Number(process.env.CRAWLER_CONCURRENCY) || 3;
+const ConcurrencyLimit = Number(process.env.CRAWLER_CONCURRENCY) || 2;
 
 // 크롤러 타입 (환경 변수에서 가져오거나 기본값 사용)
 const crawlerType = process.env.CRAWLER_TYPE || 'crawl4ai';
@@ -180,6 +180,7 @@ export async function generateSerpQueries({
   const secondLevelPrompt = `You are conducting a focused second-level search on the dimension: **${parentDimension}**
     Generate ${numQueries} follow-up search queries in English (3–10 words each) that:
     - Generate search queries by selecting one sub-topic under each **"${parentDimension}"** below:
+    
     Solution Overview
     Solution Overview & Market Analysis:
     1-1. Solution Definition & Core Features (functionality, technical specs, capabilities)
@@ -282,7 +283,8 @@ ${learnings ?
 
   return res.object.queries.slice(0, numQueries);
 }
-// numLearnings, Fup Questions 는 2개로 변경
+
+// src/deep-research.ts의 processSerpResult 함수 - 소스 자동 추가 완성 버전
 export async function processSerpResult({
   query,
   result,
@@ -294,185 +296,123 @@ export async function processSerpResult({
   numLearnings?: number;
   numFollowUpQuestions?: number;
 }) {
-  // 1. 검색 결과 디버깅 로그 추가
-  log(`[DEBUG] Processing SERP result for query: "${query}"`);
-  log(`[DEBUG] Raw result data length: ${result.data?.length || 0}`);
-  log(`[DEBUG] Raw result structure:`, JSON.stringify(result, null, 2).substring(0, 500) + '...');
+  // 1. URL과 내용을 함께 보존
+  const contentsWithSources = result.data
+    .filter(item => item.markdown && item.url)
+    .slice(0, 10)  // 개수 제한
+    .map((item, index) => ({
+      sourceId: index + 1,
+      url: item.url,
+      title: item.title || item.url,
+      content: item.markdown!
+    }));
   
-  // 2. 검색 결과(markdown) 추출 - 최대 5개로 제한
-  const contents = compact(result.data.map(item => item.markdown)).slice(0, 10);
-  log(`[DEBUG] Extracted contents length: ${contents.length} (limited to 5)`);
+  log(`[DEBUG] Processing ${contentsWithSources.length} contents in single step`);
   
-  // 각 콘텐츠의 길이도 확인
-  contents.forEach((content, index) => {
-    log(`[DEBUG] Content ${index + 1} length: ${content?.length || 0} chars`);
-  });
-  
-  // 문서가 없는 경우 빈 결과 반환
-  if (contents.length === 0) {
-    log(`[ERROR] No contents found for query: ${query}`);
-    log(`[ERROR] Available data fields:`, Object.keys(result.data[0] || {}));
+  if (contentsWithSources.length === 0) {
     return {
-      learnings: [],
-      followUpQuestions: [],
+      learnings: [`## No Search Results\n\nNo valid search results found for query: "${query}".`],
+      followUpQuestions: [`What alternative keywords could be used for ${query}?`],
     };
   }
 
-  // 2. 각 문서별 개별 요약 생성 - 동시성 제한으로 순차 처리
-  log(`Generating individual summaries for ${contents.length} documents...`);
-  const docLimit = pLimit(3); // 문서 처리 동시성을 5개로 제한
-  const learningsPerDoc = await Promise.all(
-    contents.map((content, index) =>
-      docLimit(async () => {
-        try {
-          // 각 문서 내용 길이 제한 - 토큰 수 축소
-          const trimmedContent = trimPrompt(content, 50_000);
-          
-          // 개별 문서에 대한 요약 생성
-          const docRes = await generateObject({
-            model: getResearchModel(),
-            abortSignal: AbortSignal.timeout(60_000), // 타임아웃 증가
-            system: systemPrompt(),
-            prompt: `Given the following content from a search result for the query "${query}", generate at least more than 10 key learnings from this specific document. Make the learnings precise, detailed and information-dense. Include any entities, metrics, numbers, or dates.
+  // 2. 모든 크롤링 결과를 URL과 함께 하나로 결합
+  const combinedContentWithSources = contentsWithSources.map(item => 
+    `---
+## Source [${item.sourceId}]: ${item.title}
+**URL**: ${item.url}
 
-<content>
-${trimmedContent}
-</content>`,
-            schema: z.object({
-              documentLearnings: z.array(z.string()).describe('key learnings from this document'),
-            }),
-          });
-          
-          log(`Document ${index + 1}: Generated ${docRes.object.documentLearnings.length} learnings`);
-          return docRes.object.documentLearnings;
-        } catch (error) {
-          log(`Error processing document ${index + 1}:`, error);
-          return []; // 오류 발생 시 빈 배열 반환하여 계속 진행
-        }
-      })
-    ),
-  );
+${item.content}
+`
+  ).join('\n\n');
 
-  // 3. 모든 개별 요약 통합 (평면화)
-  const allDocumentLearnings = learningsPerDoc.flat();
-  log(`[DEBUG] Total individual learnings generated: ${allDocumentLearnings.length}`);
-
-  // 4. 빈 데이터 처리 - 개별 학습 내용이 없는 경우 안전장치
-  if (allDocumentLearnings.length === 0) {
-    log(`[ERROR] No individual learnings generated for query: ${query}`);
-    return {
-      learnings: [`## 검색 결과 없음\n\n검색어 "${query}"에 대한 유효한 검색 결과를 찾을 수 없었습니다. 다른 키워드나 검색 방식을 시도해보시기 바랍니다.`],
-      followUpQuestions: [`${query}와 관련된 다른 검색 키워드는 무엇인가요?`],
-    };
-  }
-
-  // 5. 전체 통합 요약 생성 (줄글 형식)
+  // 3. AI에게 전체 내용을 한 번에 전달 (본문만 작성하도록 지시)
   const res = await generateObject({
     model: getResearchModel(),
-    abortSignal: AbortSignal.timeout(90_000), // 상세한 작성을 위해 타임아웃 증가
+    abortSignal: AbortSignal.timeout(90_000),
     system: systemPrompt(),
     prompt: trimPrompt(
-      `Using only the sentences inside <individual_learnings>, write a coherent narrative for the search query: “${query}.”
-      You are a precise information extractor. Your primary goal is accuracy over length.
+      `Extract and organize key insights for the search query "${query}".
 
-      ## Core Principles
-      1. **Only use information explicitly present in sources**
-      2. **Never generate content beyond what sources provide**
-      3. **Quality over quantity - shorter accurate content is better than longer fabricated content**
-      4. **Output in English unless otherwise specified**
+## Core Principles (Anti-Hallucination)
+1. **Extract ONLY information explicitly stated in sources** - No speculation or inference
+2. **Preserve exact facts** - Don't rephrase or interpret beyond what sources say
+3. **Mandatory citations** - Every claim must end with [number] format
 
-      ## Extraction Rules
+## CRITICAL: Content Extraction Rule
+**Extract more when you have more**: Rich, comprehensive source material demands thorough, extensive extraction - don't leave valuable information on the table.
 
-      1. **Information Gathering**
-        - Extract meaningful chunks of information (2-4 sentences) that form complete thoughts
-        - Combine directly related facts from the same source into coherent paragraphs
-        - Keep statistical data, quotes, and specific claims intact
-        - Preserve important context that appears immediately around key facts
+## Target Format: Structured Information Extraction
+Organize findings by importance and relevance, NOT by creating artificial narrative flow.
 
-      2. **Expansion Guidelines** (ONLY when source material allows)
-        - If sources contain explanations, include them
-        - If sources show cause-effect relationships, preserve them
-        - If sources provide examples or comparisons, retain them
-        - DO NOT create explanations, examples, or relationships not in sources
+**Structure:**
+- Use ## section headings for major topic areas (only when you have substantial content)
+- Under each section, present individual key insights as separate, complete statements
+- Each insight should be self-contained and factually complete
+- Prioritize by importance/impact rather than forcing logical connections
 
-      3. **Structure**
-        - Use ## topical headings based on actual content available
-        - Under each heading:
-          * Group related information from sources
-          * Maintain logical flow by ordering facts sensibly
-          * If only 1-2 facts exist for a topic, that's acceptable
-        - Skip sections entirely if insufficient information exists
+**Individual Insight Format:**
+[Complete factual statement with specific details]. [Additional context if provided in source]. [source number]
 
-      4. **Length Management**
-        - Target length: As long as source material supports (typically 600-1500 words)
-        - Each section: Include what sources provide, no minimum requirement
-        - If a topic has limited information, keep it brief
-        - Never pad content to meet length targets
+## STRICTLY FORBIDDEN
+- ❌ Artificial connecting phrases like "Furthermore", "Additionally", "Moreover" 
+- ❌ Inferring relationships not explicitly stated in sources
+- ❌ Creating topic transitions or narrative flow
+- ❌ Bullet points or fragmentary lists
+- ❌ Adding interpretations beyond source content
 
-      5. **Anti-Hallucination Safeguards**
-        - Before writing each sentence, verify it exists in sources
-        - Use these markers when needed:
-          * "[정보 없음]" - when expected information is missing
-          * "[추가 정보 부족]" - when a topic seems incomplete
-          * "[원문 참조 필요]" - when sources hint at more detail not provided
-        - If unsure whether information is from sources or inference, exclude it
+## REQUIRED Approach
+- ✅ Extract each important fact as a complete, standalone statement
+- ✅ Preserve specific numbers, percentages, and concrete details exactly as stated
+- ✅ Group related facts under appropriate headings when sufficient content exists
+- ✅ Present insights in order of importance/relevance to the query
+- ✅ Include context only when explicitly provided in sources
+- ✅ End each factual statement with [number] citation
 
-      6. **Citation Rules** 
-        1. Format – Append citations as (Source: …) or (Sources: …, …) after each fact-bearing sentence or paragraph.
-        2. Acceptable source strings MUST satisfy at least one of the following:
-            a) Widely recognized organisation, company, or government body
-              e.g. Gartner, OECD, Microsoft
-            b) Established journal, conference, or media outlet with optional year
-              e.g. Nature 2024, IEEE ICCV 2023, MIT Technology Review
-            c) Clear top-level domain of a reputable entity
-              e.g. who.int, nasa.gov, ft.com, arxiv.org
-        3. Special cases
-            • arXiv cite as arXiv 2409.14858 2024 or arXiv.org – Paper Title
-            • Datasets or repositories include provider and dataset or repo name
-              e.g. Kaggle – Titanic Survival
-        4. Disallowed identifiers omit the statement if only these are available:
-            • Pure numbers or version strings 2409.14858v1, 2020, 1, 3, 5
-            • Random codes or hashes SRTE57145DR, abc123
-            • Generic words content, article, data, report
-        5. Multiple sources separate with commas
-            e.g. (Sources: Gartner 2024, arXiv 2409.14858 2024)
-        6. Authority first favour facts backed by authoritative, reputable sources; ignore information that cannot be cited with a compliant identifier.
+**Scale Guideline**: Extract more insights and details when sources are comprehensive; fewer when sources are limited.
 
-      7. **Information Density Check**
-        - Acceptable to have short sections if sources are limited
-        - Acceptable to have fewer sections if content is sparse
-        - NOT acceptable to invent content to fill space
-        - Focus on extracting all available valuable information rather than creating narrative
+<combined_search_results>
+${combinedContentWithSources}
+</combined_search_results>
 
-      ## Final Verification
-      Before outputting, check each statement:
-      - Can I point to the exact source sentence(s)?
-      - Am I combining facts or creating new connections not in sources?
-      - Would removing this statement lose source information?
-
-      Remember: Your users prefer complete but concise information over lengthy but partially fabricated content..
-      
-      \\n\n<individual_learnings>\n${allDocumentLearnings.map(learning => `- ${learning}`).join('\n')}\n</individual_learnings>`,
+Extract key insights as complete, factual statements. Focus on information density rather than narrative coherence.`
     ),
     schema: z.object({
-      detailedSummary: z.string().describe('A detailed, structured summary in Korean with appropriate section headers (## format). Each section should contain comprehensive narrative content while preserving original information details.'),
-      followUpQuestions: z
-        .array(z.string())
-        .describe(
-          `List of follow-up questions to research the topic further, max of ${numFollowUpQuestions}`,
-        ),
+      detailedSummary: z.string().describe('Main analysis content with citations, WITHOUT Sources section'),
+      followUpQuestions: z.array(z.string()).max(numFollowUpQuestions),
     }),
   });
 
-  // 생성된 상세 요약문을 배열에 담아 기존 구조와 호환되도록 함
-  const learnings = [res.object.detailedSummary];
-  log(`[DEBUG] Created a detailed summary and ${res.object.followUpQuestions.length} questions`);
+  // 🔥 4. 코드에서 자동으로 Sources 섹션 생성 (퍼플렉시티 스타일)
+  let finalSummary = res.object.detailedSummary;
+  
+  // Sources 섹션이 이미 있는지 체크 (중복 방지)
+  if (!finalSummary.toLowerCase().includes('## sources') && 
+      !finalSummary.toLowerCase().includes('# sources')) {
+    
+    // 퍼플렉시티 스타일의 Sources 섹션 추가
+    const sourcesSection = '\n\n---\n\n## Sources\n\n' + 
+      contentsWithSources.map(source => {
+        // 제목이 URL과 다르면 "제목 - URL" 형태, 같으면 URL만
+        if (source.title && source.title !== source.url && !source.title.startsWith('http')) {
+          return `${source.sourceId}. ${source.title} - ${source.url}`;
+        } else {
+          return `${source.sourceId}. ${source.url}`;
+        }
+      }).join('\n');
+    
+    finalSummary = finalSummary + sourcesSection;
+  }
+  
+  log(`[DEBUG] Generated analysis with ${contentsWithSources.length} auto-appended sources`);
   
   return {
-    learnings,
+    learnings: [finalSummary],
     followUpQuestions: res.object.followUpQuestions,
   };
 }
+
+
 
 export async function writeFinalAnswer({
   prompt,
