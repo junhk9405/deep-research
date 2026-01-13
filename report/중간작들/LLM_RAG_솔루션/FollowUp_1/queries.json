@@ -2,22 +2,22 @@
   "depth": 1,
   "maxDepth": 2,
   "folderName": "FollowUp_1",
-  "timestamp": "2025-06-20T06:26:56.297Z",
-  "parentDimension": "Regulatory & Risk Snapshot",
+  "timestamp": "2025-06-23T05:01:12.582Z",
+  "parentDimension": "Competitive Landscape & Strategic Differentiators",
   "totalQueries": 2,
   "queries": [
     {
       "index": 1,
-      "query": "Global data privacy regulations for LLM RAG",
+      "query": "LLM RAG market size growth drivers",
       "dimension": null,
-      "researchGoal": "Explore major global and local data and AI regulations impacting LLM RAG compliance.",
+      "researchGoal": "Analyze market size, growth rate, and demand drivers in LLM RAG solutions",
       "expectedResultFile": null
     },
     {
       "index": 2,
-      "query": "Sector-specific compliance challenges in RAG",
+      "query": "LLM RAG competitors funding and partnerships",
       "dimension": null,
-      "researchGoal": "Investigate compliance, security, and certification requirements in finance and healthcare for RAG systems.",
+      "researchGoal": "Investigate funding, mergers, acquisitions, and partnership trends among LLM RAG competitors",
       "expectedResultFile": null
     }
   ]

@@ -157,6 +157,7 @@ export async function generateSerpQueries({
     Each query MUST:
       • Add only dimension-specific terms that relate directly to this topic.
       • Exclude unrelated or broader synonyms.
+      • Focus on Korean market and technology landscape.
 
     Solution Overview & Market Analysis
     — solution scope and functional definition, global and Korean market size with growth rates (TAM/SAM/CAGR), primary value proposition, and major application areas across industries
@@ -180,19 +181,20 @@ export async function generateSerpQueries({
   const secondLevelPrompt = `You are conducting a focused second-level search on the dimension: **${parentDimension}**
     Generate ${numQueries} follow-up search queries in English (3–10 words each) that:
     - Generate search queries by selecting one sub-topic under each **"${parentDimension}"** below:
+    - **Focus on Korean market and technology landscape**
     
     Solution Overview
     Solution Overview & Market Analysis:
     1-1. Solution Definition & Core Features (functionality, technical specs, capabilities)
-    1-2. Market Size & Growth Dynamics (TAM/SAM/CAGR, growth drivers, geographic trends)
-    1-3. Value Proposition & Competitive Position (differentiation, market positioning)
-    1-4. Industry Applications & Use Cases (verticals, scenarios, adoption patterns)
+    1-2. Korean Market Size & Growth Dynamics (TAM/SAM/CAGR, growth drivers, geographic trends)
+    1-3. Value Proposition & Competitive Position in Korea (differentiation, market positioning)
+    1-4. Industry Applications & Use Cases in Korea (verticals, scenarios, adoption patterns)
 
     Customer Intelligence & Business Case:
-    2-1. Customer Segmentation & Personas (target segments, decision-makers, buyer journey)
+    2-1. Customer Segmentation & Personas in Korea (target segments, decision-makers, buyer journey)
     2-2. Pain Points & Business Impact (problems, severity metrics, current costs)
     2-3. ROI & Business Value (quantified ROI, payback periods, efficiency gains)
-    2-4. Success Stories & Case Studies (testimonials, reference customers, proven results)
+    2-4. Success Stories & Case Studies in Korean market (testimonials, reference customers, proven results)
 
     Technology Landscape & Trends:
     3-1. Latest Technology Trends & Roadmap (2024-2025 trends, emerging innovations)
@@ -201,9 +203,9 @@ export async function generateSerpQueries({
     3-4. Ecosystem & Open Source (developer community, open-source projects, integrations)
 
     Competitive Technology Analysis:
-    4-1. Major Competitors & Market Leaders (key players, market share, positioning)
+    4-1. Major Competitors & Korean Market Leaders (key players, market share, positioning)
     4-2. Technology Feature Comparison (feature comparison, technical capabilities, benchmarks)
-    4-3. Vendor Ecosystem & Partnerships (partner networks, integrations, alliances)
+    4-3. Vendor Ecosystem & Partnerships in Korea (partner networks, integrations, alliances)
     4-4. Differentiation & Competitive Advantage (USPs, market gaps, opportunities)
 
     Technology Implementation & ROI:

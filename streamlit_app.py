@@ -168,7 +168,7 @@ def show_progress_view():
     status_placeholder = st.empty()
     
     # 진행상황 폴링
-    max_iterations = 300  # 최대 10분 (2초 * 300 = 600초)
+    max_iterations = 600  # 최대 10분 (2초 * 300 = 600초)
     iteration = 0
     
     while st.session_state.research_status == 'running' and iteration < max_iterations:
